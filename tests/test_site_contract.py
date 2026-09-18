@@ -8,7 +8,11 @@
 4. 页脚合规声明只挂在 /jieban/ 下，不上组织主页；
 5. 控件配色纪律——按钮锁死链接四态，正文链接规则不声明 `color`
    （色值统一由 token 提供）并以 `:not()` 绕开控件，表面色 token 遵循主题语义
-   （`on-background` 是表面、`on-surface` 是文字）。
+   （`on-background` 是表面、`on-surface` 是文字）；
+6. 侧栏开关的行为绑定——主题渲染两份同名开关而脚本只认 DOM 中第一个（被隐去的
+   那份），可见的那份必须由 `dao.js` 补绑，否则宽屏点不动、窄屏唤不出抽屉；
+7. 行为脚本的执行时机——`dao.js` 由 Sphinx 注入 `<head>`，必须等 DOM 就绪再取节点，
+   否则选择器全部落空且不报错（开关点了没反应、淡入类也挂不上）。
 
 运行（需含 Sphinx 依赖的 Python 环境，本项目为 py314）：
 
@@ -28,6 +32,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DOC_DIR = REPO_ROOT / "doc"
 JIEBAN_DIR = DOC_DIR / "jieban"
 CSS_FILE = DOC_DIR / "_static" / "dao.css"
+JS_FILE = DOC_DIR / "_static" / "dao.js"
 
 CHANNEL_SLUGS = ("zhizu", "hengyu", "zhihe", "yuduo")
 
@@ -196,6 +201,58 @@ def test_prose_link_rules_do_not_capture_controls():
             assert ":not(.jb-btn)" in sel, f"正文链接规则未排除控件按钮：{sel}"
             assert ":not(.btn)" in sel, f"正文链接规则未排除通用按钮：{sel}"
     assert checked >= 1, "未找到正文链接规则，断言形同虚设"
+
+
+def test_visible_sidebar_toggles_get_bound():
+    """可见的侧栏开关必须由 dao.js 补上行为。
+
+    主题把两侧开关各渲染两份：`header.bd-header` 里一份（被主题自己的样式隐去，
+    因为 book 主题把开关搬到了正文栏）、`.bd-header-article` 里一份（用户实际看到的）。
+    两套主题脚本都用 `querySelector(".primary-toggle")` 只认 DOM 里第一个，也就是被
+    隐去的那份——于是可见开关点不动：宽屏不折叠、窄屏不出抽屉，控制台还一片安静。
+    这条缺陷无法在样式层断言，只能在行为层守护。
+    """
+    js = re.sub(r"/\*.*?\*/", "", JS_FILE.read_text(encoding="utf-8"), flags=re.S)
+    assert "header.bd-header ." in js and ".bd-header-article ." in js, (
+        "dao.js 未定位主题渲染的两份侧栏开关，可见开关会没有行为"
+    )
+    assert re.search(r"\bhidden\.click\(\)", js), (
+        "dao.js 未把可见开关的点击转发给主题已绑定的节点"
+    )
+    for kind in ("primary", "secondary"):
+        assert f'"{kind}"' in js, f"dao.js 未处理 {kind} 侧栏开关"
+
+
+def test_behavior_script_waits_for_dom():
+    """dao.js 在 <head> 里同步执行，取节点必须等 DOM 就绪，否则静默空跑。
+
+    Sphinx 把 `html_js_files` 注入到 `<head>`（产物里在 `<meta name="viewport">`
+    之前），且不带 defer：脚本执行时 `<body>` 尚未开始解析。此时 `querySelector`
+    一律返回空——侧栏开关的绑定会走 `if (!hidden || !shown) return;` 短路；滚动淡入
+    的 `querySelectorAll` 得到空集，连 `.jb-reveal` 类都不会挂上。两处都**不报错**，
+    浏览器控制台一片干净，只有「点了没反应」「没有入场动效」这种哑症状。
+
+    这条断言守护的是执行时机，而不是某个函数名：文件里的取节点动作必须都在函数
+    体内（即挂在 DOM 就绪闸门下），且顶层不得再有裸跑的 IIFE。
+    """
+    js = re.sub(r"/\*.*?\*/", "", JS_FILE.read_text(encoding="utf-8"), flags=re.S)
+    assert "DOMContentLoaded" in js, "dao.js 未等 DOM 就绪，取节点会全部落空"
+
+    gated = len(re.findall(r"domReady\(function", js))
+    assert gated >= 2, f"dao.js 只有 {gated} 个入口挂在就绪闸门下，滚动淡入与开关绑定都要挂"
+
+    depths, depth = [], 0
+    for i, ch in enumerate(js):
+        if js.startswith("document.querySelector", i):
+            depths.append(depth)
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+    assert depths and all(d > 0 for d in depths), (
+        f"dao.js 存在裸在顶层执行的 querySelector（花括号深度 {depths}）——"
+        "脚本在 <head> 里跑，取到的必是空集"
+    )
 
 
 def test_six_covenant_items_present():
