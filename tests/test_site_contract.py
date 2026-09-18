@@ -1,11 +1,14 @@
 """道用（daoApps）站点契约测试。
 
-校验四件事：
+校验五件事：
 1. 组织主页的仓库清单与分组计数正确（14 个仓库 / 5 类用法）；
 2. 结伴子站的页面与六条公约内容齐备；
 3. `conf.py` 的「版本身份证」构建期守卫真的会拦截未标注版本的引文
    （防止守卫写成永不触发的装饰品）；
-4. 页脚合规声明只挂在 /jieban/ 下，不上组织主页。
+4. 页脚合规声明只挂在 /jieban/ 下，不上组织主页；
+5. 控件配色纪律——按钮锁死链接四态，正文链接规则不声明 `color`
+   （色值统一由 token 提供）并以 `:not()` 绕开控件，表面色 token 遵循主题语义
+   （`on-background` 是表面、`on-surface` 是文字）。
 
 运行（需含 Sphinx 依赖的 Python 环境，本项目为 py314）：
 
@@ -118,6 +121,81 @@ def test_four_channel_colors_defined():
     css = CSS_FILE.read_text(encoding="utf-8")
     for token in ("--zhizu", "--hengyu", "--zhihe", "--yuduo"):
         assert token in css
+
+
+def _css_flat() -> str:
+    """把样式表压成单行，便于按选择器做断言（多行选择器列表会被折行）。"""
+    return re.sub(r"\s+", " ", CSS_FILE.read_text(encoding="utf-8"))
+
+
+def test_buttons_lock_all_link_states():
+    """按钮必须显式声明 :link/:visited/:visited:hover/:active。
+
+    主题有两条会反噬控件配色的规则：
+      `a:active,a:visited{color:var(--pst-color-link)}`     → (0,1,1)
+      `a:visited:hover{color:var(--pst-color-link-hover)}`  → (0,2,1)
+    前者高于 `.jb-btn-primary` 的 (0,1,0)，后者高于 `:hover` 的 (0,2,0)。
+    两个状态都真实踩过坑：先是「深底色 + 朱砂红字」，补了 :visited 之后
+    又漏掉 :visited:hover，导致已访问按钮悬停时文字不变白、朱砂底压深朱砂字。
+    """
+    css = _css_flat()
+    for base in (
+        ".jb-btn-primary",
+        ".jb-btn-ghost",
+        "article.bd-article .org-home .cta .btn-primary",
+        "article.bd-article .org-home .cta .btn-ghost",
+    ):
+        for state in (":link", ":visited", ":visited:hover", ":active"):
+            assert f"{base}{state}" in css, f"{base}{state} 未声明，链接态会反噬控件配色"
+
+
+def test_surface_tokens_follow_theme_semantics():
+    """`--pst-color-X` 是表面色，`--pst-color-on-X` 才是其上的文字色。
+
+    主题默认 `--pst-color-on-background:#fff`（浅色主题）——变量名里的 “on”
+    指的是「叠在页面背景之上的那张面」，而不是「背景之上的文字」。主题把
+    `kbd`、`.bd-content .sd-card-body`、`.admonition`、`.bd-header`、表格斑马纹
+    的 `background-color` 统统绑在它上面；一旦按字面赋成深墨，这些控件会成片变黑。
+    实测踩坑：四频道卡片的卡体被刷成黑底，卡面文字直接不可读（`.jb-card` 的
+    `background !important` 只盖住了卡片外壳，盖不住卡体）。
+
+    这条断言守护根因，而不是禁止某个变量出现——之前 kbd 冒黑方块时打的是
+    「kbd 不许用该变量」的治标补丁，结果同类黑块又从卡片、告示块上冒出来。
+    """
+    css = _css_flat()
+    assert "--pst-color-on-background: var(--card)" in css, (
+        "--pst-color-on-background 必须赋表面色；赋成 --ink 会让卡片体、kbd、"
+        "告示块、表格斑马纹整体变黑"
+    )
+    assert "--pst-color-on-surface: var(--ink)" in css, (
+        "--pst-color-on-surface 才是表面之上的文字色，不应与表面色混用"
+    )
+
+
+def test_prose_link_rules_do_not_capture_controls():
+    """正文链接规则不得声明 color，且必须用 :not() 绕开控件按钮。
+
+    色值已由 token 统一提供（主题基础规则 `a{color:var(--pst-color-link)}` →
+    --cinnabar，`a:hover` → --cinnabar-deep），正文规则再声明一次就是纯冗余；
+    而 `article.bd-article a` 带类型选择器 article，特异性 (0,2,1) 会压过所有
+    单类组件规则 (0,2,0)——按钮前景色被抢（渲染出「朱砂底 + 深朱砂字」），
+    卡片内链接的频道色也被盖成朱砂。此前两头都在打补丁（给按钮堆特异性、给正文
+    规则加 :not()），删掉冗余 color 才是根治：组件配色按各自特异性自然各归其位。
+    """
+    css = re.sub(r"/\*.*?\*/", "", _css_flat(), flags=re.S)
+    checked = 0
+    for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        for sel in selectors.split(","):
+            sel = sel.strip()
+            if not sel.startswith("article.bd-article a"):
+                continue
+            checked += 1
+            assert not re.search(r"(?<![\w-])color\s*:", body), (
+                f"正文链接规则声明了 color，会以 (0,2,1) 压制组件配色：{sel}"
+            )
+            assert ":not(.jb-btn)" in sel, f"正文链接规则未排除控件按钮：{sel}"
+            assert ":not(.btn)" in sel, f"正文链接规则未排除通用按钮：{sel}"
+    assert checked >= 1, "未找到正文链接规则，断言形同虚设"
 
 
 def test_six_covenant_items_present():

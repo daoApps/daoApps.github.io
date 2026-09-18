@@ -58,12 +58,19 @@
  * (0,1,0)——只写 :root 会被主题整块盖掉（实测：侧栏链接仍是主题的冷蓝灰）。
  * jieban.css 最后加载，同特异性下后声明者胜，故这里能赢。
  *
- * dark 一并落到浅色 token：本项目明确不要深色模式（与落地页一致）。 */
+ * dark 一并落到浅色 token：本项目明确不要深色模式（与落地页一致）。
+ *
+ * 命名约定——按主题实际用法理解，不要按字面直觉：
+ *   主题里 `--pst-color-X` 是「表面色」，`--pst-color-on-X` 是「该表面之上的文字色」。
+ *   主题默认 `--pst-color-on-background:#fff`（浅色）——所以它是「叠在页面背景之上的
+ *   那张面」，不是文字色。主题把 kbd、.sd-card-body、.admonition、.bd-header、表格
+ *   斑马纹的 background-color 全绑在它上面，一旦误赋为深墨，这些控件会成片变黑：
+ *   实测四频道卡片的卡体被刷成黑底，卡面文字直接不可读。文字色走 on-surface。 */
 :root,
 html[data-theme="light"],
 html[data-theme="dark"] {
   --pst-color-background: var(--paper);
-  --pst-color-on-background: var(--ink);
+  --pst-color-on-background: var(--card);
   --pst-color-surface: var(--card);
   --pst-color-on-surface: var(--ink);
   --pst-color-text-base: var(--ink);
@@ -137,6 +144,17 @@ body::before {
 .bd-sidebar a.current,
 .bd-toc a.current {
   color: var(--cinnabar);
+}
+
+/* —— 搜索框内的快捷键提示（kbd）——
+ * 此处不再单独覆盖：主题默认即取 `--pst-color-on-background`（表面色）与
+ * `--pst-color-text-muted`（次要墨色），上面把表面 token 纠正为纸色之后，
+ * kbd 自然就是纸面上的浅色小片。之前那两枚纯黑方块正是 token 误赋的表现之一，
+ * 已随根因一并消除（有测试守护）。 */
+
+/* 搜索框聚焦环：主题默认取 --pst-color-accent（冷色），与纸感不搭 */
+.bd-search:focus-within {
+  box-shadow: 0 0 0 3px rgba(168, 84, 60, 0.16);
 }
 
 /* 顶栏在本主题中是空容器——品牌与主导航实际挂在左侧栏内。
@@ -327,33 +345,78 @@ article.bd-article section:has(> .jb-eyebrow) + section > h2 {
   font-family: var(--sans);
   border: 1px solid transparent;
   text-decoration: none;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+/* —— 按钮配色：控件自带一套配色，任何正文链接色规则都不该与它争夺 ——
+ * 单类按钮规则只有 (0,2,0)，凡带类型选择器的链接规则都能压过它。曾经有三条：
+ *   `article.bd-article a:hover` → (0,2,1)  本站正文链接规则 → 已删其冗余 color（第十二节）
+ *   `a:visited:hover`            → (0,2,1)  主题
+ *   `a:active,a:visited`         → (0,1,1)  主题
+ * 实测事故两起：先是「朱砂底 + 深朱砂字」——背景由按钮规则刷成朱砂、文字被正文
+ * 链接规则抢走；补了 :visited 之后又漏掉 :visited:hover，出现「已访问按钮悬停时
+ * 文字不变白」。
+ * 对策分两半，缺一不可：
+ *   ① 正文链接规则不声明 color，色值统一由 token（--pst-color-link 及 hover 版）
+ *      提供——组件规则才可能按各自特异性各归其位；
+ *   ② 按钮侧显式声明 link/visited/hover/visited:hover/active，稳在 (0,3,0) 以上。
+ * 改任一侧都要同步跑 tests/test_site_contract.py 里的按钮配色契约。 */
+
+.jb-btn,
+.jb-btn:link,
+.jb-btn:visited,
+.jb-btn:hover,
+.jb-btn:visited:hover,
+.jb-btn:active {
+  text-decoration: none;
 }
 
 .jb-btn:active {
   transform: translateY(1px);
 }
 
-.jb-btn-primary {
-  background: var(--dai);
-  color: #f7f3eb;
-  border-color: var(--dai-deep);
+/* 主按钮：朱砂描边 + 淡朱砂底。纸感纪律下不用大面积深色填充——
+ * 全页最重的色块留给印章，按钮只借朱砂的色相表态。 */
+.jb-btn-primary,
+.jb-btn-primary:link,
+.jb-btn-primary:visited {
+  background: rgba(168, 84, 60, 0.07);
+  color: var(--cinnabar-deep);
+  border-color: var(--cinnabar);
 }
 
-.jb-btn-primary:hover {
-  background: var(--dai-deep);
-  color: #fffdf8;
+.jb-btn-primary:hover,
+.jb-btn-primary:visited:hover,
+.jb-btn-primary:focus-visible {
+  background: var(--cinnabar);
+  color: #fdf8f2;
 }
 
-.jb-btn-ghost {
+.jb-btn-primary:active {
+  background: var(--cinnabar-deep);
+  border-color: var(--cinnabar-deep);
+  color: #fdf8f2;
+}
+
+.jb-btn-ghost,
+.jb-btn-ghost:link,
+.jb-btn-ghost:visited {
   color: var(--ink);
   border-color: var(--line-strong);
   background: transparent;
 }
 
-.jb-btn-ghost:hover {
+.jb-btn-ghost:hover,
+.jb-btn-ghost:visited:hover,
+.jb-btn-ghost:focus-visible {
   border-color: var(--ink-2);
   color: var(--ink);
+}
+
+.jb-btn-ghost:active {
+  color: var(--ink);
+  border-color: var(--ink-2);
+  background: rgba(58, 53, 46, 0.04);
 }
 
 /* ================= 七 · 主张卡（首页屏二） ================= */
@@ -694,14 +757,15 @@ article.bd-article li {
   line-height: 2;
 }
 
-article.bd-article a {
-  color: var(--cinnabar);
+/* 正文链接：只调下划线节奏并排除控件，**不声明 color**。
+ * 色值已由 token 层统一提供（主题基础规则 `a{color:var(--pst-color-link)}` →
+ * --cinnabar，`a:hover` → --cinnabar-deep），此处重复声明过一次，代价很大：
+ * `article.bd-article a` 带类型选择器 article，特异性 (0,2,1) 压过所有单类组件
+ * 规则 (0,2,0)——按钮前景色被抢（「朱砂底 + 深朱砂字」），卡片内链接的频道色
+ * 也被盖成朱砂。删掉冗余 color 后，组件配色按各自特异性自然各归其位。 */
+article.bd-article a:not(.jb-btn):not(.btn) {
   text-decoration-thickness: 1px;
   text-underline-offset: 0.22em;
-}
-
-article.bd-article a:hover {
-  color: var(--cinnabar-deep);
 }
 
 /* 框引：朱砂细边，纸面留白 */
@@ -1122,25 +1186,47 @@ article.bd-article .org-home .cta .btn:active {
   transform: translateY(1px);
 }
 
-article.bd-article .org-home .cta .btn-primary {
-  background: var(--dai);
-  color: #f7f3eb;
-  border-color: var(--dai-deep);
+/* 主按钮配色与结伴站 `.jb-btn-primary` 同源：朱砂描边 + 淡朱砂底，
+ * 并连带锁死 :link/:visited，避免正文链接色接管控件前景色。 */
+article.bd-article .org-home .cta .btn-primary,
+article.bd-article .org-home .cta .btn-primary:link,
+article.bd-article .org-home .cta .btn-primary:visited {
+  background: rgba(168, 84, 60, 0.07);
+  color: var(--cinnabar-deep);
+  border-color: var(--cinnabar);
 }
 
-article.bd-article .org-home .cta .btn-primary:hover {
-  background: var(--dai-deep);
-  color: #fffdf8;
+article.bd-article .org-home .cta .btn-primary:hover,
+article.bd-article .org-home .cta .btn-primary:visited:hover,
+article.bd-article .org-home .cta .btn-primary:focus-visible {
+  background: var(--cinnabar);
+  color: #fdf8f2;
 }
 
-article.bd-article .org-home .cta .btn-ghost {
+article.bd-article .org-home .cta .btn-primary:active {
+  background: var(--cinnabar-deep);
+  border-color: var(--cinnabar-deep);
+  color: #fdf8f2;
+}
+
+article.bd-article .org-home .cta .btn-ghost,
+article.bd-article .org-home .cta .btn-ghost:link,
+article.bd-article .org-home .cta .btn-ghost:visited {
   background: transparent;
   color: var(--ink);
   border-color: var(--line-strong);
 }
 
-article.bd-article .org-home .cta .btn-ghost:hover {
+article.bd-article .org-home .cta .btn-ghost:hover,
+article.bd-article .org-home .cta .btn-ghost:visited:hover,
+article.bd-article .org-home .cta .btn-ghost:focus-visible {
   background: transparent;
+  border-color: var(--ink-2);
+  color: var(--ink);
+}
+
+article.bd-article .org-home .cta .btn-ghost:active {
+  background: rgba(58, 53, 46, 0.04);
   border-color: var(--ink-2);
   color: var(--ink);
 }
