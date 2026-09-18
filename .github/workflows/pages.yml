@@ -1,0 +1,102 @@
+name: Deploy site to GitHub Pages
+
+# 2026-09 Node.js 24 兼容性清单（与 projects/awesome-okf-xs/.github 对齐）：
+#   actions/checkout@v5                 (node24)
+#   actions/setup-python@v6             (node24)
+#   actions/cache@v5                    (node24)
+#   actions/upload-pages-artifact@v4    (node24)
+#   actions/deploy-pages@v5             (node24)
+#   rhysd/actionlint@v1.7.12            (node24, lints YAML; 未发布 major tag，必须精确到 patch 级)
+# 每次 deprecation 周期（约 2 年）重跑一次 actionlint 校验：
+#   docker run --rm -v $PWD:/repo rhysd/actionlint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: Quality gates (actionlint / contract tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Lint workflow files (actionlint)
+        uses: rhysd/actionlint@v1.7.12
+        with:
+          # 显式枚举 workflow 文件，不传目录参数（容器内 readdir() 对目录会报 "is a directory"）。
+          # -shellcheck= 空值关闭 shellcheck 集成，与本地缺 shellcheck.exe 的环境差异对齐；
+          # 业务层脚本正确性由后续契约测试与 -W 构建兜底。
+          args: '-color -shellcheck= .github/workflows/pages.yml'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          allow-prereleases: true
+      - name: Install doc dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Gate — 站点契约测试（组织主页清单 / 结伴内容 / 版本身份证 / 页脚分层）
+        run: python -m pytest tests -q
+
+  build:
+    name: Build (Sphinx · warning-as-error)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: gates
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        id: setup-python
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          allow-prereleases: true
+      - name: Cache Sphinx doctrees
+        uses: actions/cache@v5
+        with:
+          path: _build/doctrees
+          key: >-
+            ${{ runner.os }}-${{ github.ref_name }}-py${{ steps.setup-python.outputs.python-version }}-docs-v1-
+            ${{ hashFiles('doc/conf.py', 'requirements.txt', 'doc/**/*.md', 'doc/_static/**') }}
+      - name: Install doc dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Build HTML
+        # -W：警告即失败。站点规模小，零警告是可持续的硬约束。
+        run: >-
+          python -m sphinx
+          -b html -d _build/doctrees --keep-going -W
+          doc _build/html
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _build/html
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

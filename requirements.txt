@@ -1,0 +1,12 @@
+# 道用（daoApps）站点构建依赖
+# 用法：pip install -r requirements.txt
+
+sphinx>=8.2
+myst-parser>=5.1
+sphinx-book-theme>=1.1
+sphinx-copybutton>=0.5
+sphinx-design>=0.6
+sphinxcontrib-mermaid>=1.0
+
+# 站点契约测试（本地与 CI 均用）
+pytest>=8.0

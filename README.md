@@ -1,79 +1,76 @@
 # daoApps.github.io
 
-道用 · 组织主页 —— <https://daoapps.github.io/>
+> **道用（daoApps）组织站点** —— Sphinx + MyST 静态站，GitHub Actions 构建并发布。
+> 线上：<https://daoapps.github.io/>
 
-本仓库同时是**站点源码**与**发布产物**：GitHub Pages 直接从 `main` 分支根目录发布，改完即上线，无构建步骤。
+本仓库是站点的**源码仓库**，不是产物仓库。`_build/` 由 CI 每次重建，不入库。
 
-## 文件
+## 站点结构
 
-| 文件 | 用途 |
-|---|---|
-| `index.html` | 组织主页。内联样式，无外链、无依赖、无构建 |
-| `.nojekyll` | 关闭 Jekyll 处理，避免静态文件被意外改写 |
-| `jieban/` | 「结伴」子站点（`/jieban/`）。Sphinx 构建产物，**非手写**，见下节 |
+| 路由 | 源文件 | 内容 |
+|---|---|---|
+| `/` | `doc/index.md` | 组织主页：印章首屏 → 子站点入口 → 定位 → 14 个仓库 / 5 类用法 → 收录说明 |
+| `/jieban/` | `doc/jieban/index.md` | 结伴：品牌首页（六屏长卷） |
+| `/jieban/origin.html` | `doc/jieban/origin.md` | 缘起：四个群，一间客厅 |
+| `/jieban/covenant.html` | `doc/jieban/covenant.md` | 社群公约：六条底线 + 引文版本说明 |
+| `/jieban/channels/*.html` | `doc/jieban/channels/*.md` | 四频道详情：知足 / 恒与 / 知和 / 愈多 |
 
-## 路由结构
+## 目录结构
 
 ```
-/            → index.html          组织主页
-/jieban/     → jieban/index.html   「结伴」子站点（Sphinx 产物）
+daoApps.github.io/
+├── .github/workflows/pages.yml   gates（契约测试 + actionlint）→ build（Sphinx -W）→ deploy
+├── AGENTS.md                     智能体入口：任务路由表 + 各类纪律
+├── requirements.txt              构建依赖
+├── doc/                          站点源目录（唯一事实来源）
+│   ├── conf.py                   Sphinx 配置 + 构建期守卫 + 按页页脚
+│   ├── index.md                  组织主页
+│   ├── jieban/                   结伴子站
+│   └── _static/{dao.css,dao.js}  全站样式与渐进增强行为层
+├── tests/test_site_contract.py   站点契约测试
+└── _build/                       构建产物（gitignored）
 ```
 
-`.nojekyll` 位于仓库根，对子目录一并生效，故 `jieban/_static/` 不会被 Jekyll 吞掉。
-
-### 子站点 `jieban/` 的发布方式
-
-内容源不在本仓库，而在 SpecWeave 工作区的 `apps/samples/jieban-site/`（Sphinx + MyST）。
-产物全部使用相对路径引用 `_static/…`，放进任意子目录都不会断链，因此**无需任何路由或 baseurl 配置**。
-
-更新流程：
+## 构建与本地预览
 
 ```bash
-# 1. 在 SpecWeave 侧重建（-W 表示警告即失败）
-cd apps/samples/jieban-site
-python -m sphinx -b html src build/html -W --keep-going
+python -m pip install -r requirements.txt
 
-# 2. 覆盖本仓库的 jieban/，排除构建缓存
-robocopy build/html <本仓库>/jieban /E /XD .doctrees /XF .buildinfo.bak
+# 契约测试
+python -m pytest tests -q
 
-# 3. 提交推送
+# 构建（-W：警告即失败）
+python -m sphinx -b html -d _build/doctrees --keep-going -W doc _build/html
+
+# 本地预览
+python -m http.server -d _build/html 8931
 ```
 
-> 不要手工编辑 `jieban/` 下的文件——下次覆盖会丢失。要改内容请改 SpecWeave 侧的 `src/`。
+## 发布
 
-结伴站点页脚含一条指回本主页的链接；本主页首屏下方与页脚各有一条指向 `/jieban/` 的入口，构成双向路由。
+推送到 `main` 触发 `.github/workflows/pages.yml`：
 
-## 新增一个应用
+1. **gates** —— actionlint 校验 workflow YAML；跑站点契约测试；
+2. **build** —— `python -m sphinx -W` 构建，上传 Pages 产物；
+3. **deploy** —— `actions/deploy-pages@v5` 发布到 GitHub Pages。
 
-1. 在 `index.html` 中对应分组的 `.cards` 内追加一张卡片：
+> 仓库 Settings → Pages 的 Source 必须是 **GitHub Actions**（不是分支）。
+> 若仍是「Deploy from a branch」，部署 job 会失败。
 
-   ```html
-   <a class="card" href="https://github.com/daoApps/<repo>">
-     <span class="name">中文名 · English Name</span>
-     <span class="repo">&lt;repo&gt;</span>
-     <p class="desc">一句话说明。</p>
-   </a>
-   ```
+## 内容纪律（摘要）
 
-2. 同步更新该分组的 `<span class="count">` 数量与页脚的收录总数。
+完整纪律见 [AGENTS.md](AGENTS.md)，要点：
 
-应用的中文名与描述以 [daoNexus/src/data/apps.ts](https://github.com/daoApps/daoNexus/blob/main/src/data/apps.ts) 为准（该文件是应用清单的唯一事实来源）；不在其中的仓库，描述取自其自身 README。
+- 组织主页清单的唯一事实来源是 `daoApps/daoNexus` 的 `src/data/apps.ts`；本页是超集，共 14 个仓库 / 5 类用法，计数由测试守护。
+- 结伴站的引文版本身份证是**构建期硬约束**：出现「己愈多」必须同页出现「帛书乙本」，出现「知和曰明」必须同页出现「帛书甲本」。
+- 「结伴」二字不见于今本与帛书本《老子》原文，站点不宣称其典出《道德经》。
+- 内部群昵称不上公开页；结伴站不设表单、不收集信息。
+- 页脚分两层：全站层（组织入口）+ 合规层（仅 `/jieban/` 下）。
 
-## 分组
+## 技术选型说明
 
-五个能力域，各有色条：
-
-| 分组 | 色条变量 | 说明 |
-|---|---|---|
-| 社区交流 | `--g-shequ` | 连接用户，分享知识 |
-| 效率工具 | `--g-xiaolv` | 提升效率，追踪成长 |
-| 实用工具 | `--g-gongju` | 便捷工具，简化生活 |
-| 支付与链路 | `--g-zhifu` | 智能体的受约束支付能力 |
-| 系统与基座 | `--g-jizuo` | 生态的骨架与入口 |
-
-## 视觉纪律
-
-暖灰纸感（`--paper` / `--card` / `--ink`），朱砂点缀（`--cinnabar`），仅浅色模式。
-色彩 token 与 [SpecWeave 结伴站点](https://github.com/xinetzone/SpecWeave) 共用一套，但本页只取 token 层，不含任何 Sphinx 主题相关规则。
-
-忌大红大金、忌成功学大字报、忌收益承诺类措辞。
+- **主题**：`sphinx_book_theme`（阅读优先）。原选型报告写的是 furo 定制为纸感，但构建环境未装 furo，改用同为阅读优先、纸感定制成本更低的 book 主题。
+- **纸感 token**：暖灰纸面 `--paper` / 米白卡片 `--card` / 深灰褐文字 `--ink` + 朱砂 `--cinnabar` 与黛 `--dai`。明确不要深色模式。
+- **MyST**：`colon_fence` / `substitution` / `attrs_inline` 等；正文用 MyST，组件化版块（卡片网格、印章首屏）用 raw HTML + CSS 类，与结伴站既有写法一致。
+- **Mermaid**：由 `sphinxcontrib-mermaid` 渲染，版本固定 11.4.1；缘起页的图**前端从 CDN 加载**，离线打开只显示图表源码。
+- **样式特异性**：`pydata-sphinx-theme` 的 `--pst-color-*` 定义在 `html[data-theme="light"]` 上，只写 `:root` 会被盖掉；sphinx-design 自带 Bootstrap 定义了 `.card` / `.btn` / `.lead`，组织主页规则统一用 `article.bd-article .org-home` 前缀抬高特异性。
