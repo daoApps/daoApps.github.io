@@ -8,8 +8,40 @@
 
 | 文件 | 用途 |
 |---|---|
-| `index.html` | 唯一的页面。内联样式，无外链、无依赖、无构建 |
+| `index.html` | 组织主页。内联样式，无外链、无依赖、无构建 |
 | `.nojekyll` | 关闭 Jekyll 处理，避免静态文件被意外改写 |
+| `jieban/` | 「结伴」子站点（`/jieban/`）。Sphinx 构建产物，**非手写**，见下节 |
+
+## 路由结构
+
+```
+/            → index.html          组织主页
+/jieban/     → jieban/index.html   「结伴」子站点（Sphinx 产物）
+```
+
+`.nojekyll` 位于仓库根，对子目录一并生效，故 `jieban/_static/` 不会被 Jekyll 吞掉。
+
+### 子站点 `jieban/` 的发布方式
+
+内容源不在本仓库，而在 SpecWeave 工作区的 `apps/samples/jieban-site/`（Sphinx + MyST）。
+产物全部使用相对路径引用 `_static/…`，放进任意子目录都不会断链，因此**无需任何路由或 baseurl 配置**。
+
+更新流程：
+
+```bash
+# 1. 在 SpecWeave 侧重建（-W 表示警告即失败）
+cd apps/samples/jieban-site
+python -m sphinx -b html src build/html -W --keep-going
+
+# 2. 覆盖本仓库的 jieban/，排除构建缓存
+robocopy build/html <本仓库>/jieban /E /XD .doctrees /XF .buildinfo.bak
+
+# 3. 提交推送
+```
+
+> 不要手工编辑 `jieban/` 下的文件——下次覆盖会丢失。要改内容请改 SpecWeave 侧的 `src/`。
+
+结伴站点页脚含一条指回本主页的链接；本主页首屏下方与页脚各有一条指向 `/jieban/` 的入口，构成双向路由。
 
 ## 新增一个应用
 

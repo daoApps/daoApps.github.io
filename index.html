@@ -185,6 +185,60 @@ h2 {
 .btn-ghost { color: var(--ink); border-color: var(--line-strong); }
 .btn-ghost:hover { border-color: var(--ink-2); color: var(--ink); }
 
+/* ================= 子站点（/jieban/ 路由入口） ================= */
+
+.subsite { margin: 2.6rem 0 0; }
+
+.subsite-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cinnabar);
+  border-radius: var(--r-m);
+  box-shadow: var(--shadow);
+  padding: 18px 22px;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.subsite-card:hover {
+  border-color: var(--line-strong);
+  border-left-color: var(--cinnabar-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(58, 53, 46, 0.05), 0 10px 26px rgba(58, 53, 46, 0.08);
+}
+
+.subsite-tag {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--cinnabar);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  padding: 3px 7px;
+}
+
+.subsite-body { display: flex; flex-direction: column; }
+.subsite-name { font-size: 1.05rem; letter-spacing: 0.06em; color: var(--ink); }
+.subsite-desc { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+.subsite-card:hover .subsite-name { color: var(--cinnabar-deep); }
+
+.subsite-go {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .subsite-card { flex-wrap: wrap; gap: 10px 14px; }
+  .subsite-go { margin-left: 0; width: 100%; }
+}
+
 /* ================= 定位主张卡 ================= */
 
 .manifesto {
@@ -331,6 +385,18 @@ footer a:hover { color: var(--cinnabar); }
 </header>
 
 <main class="wrap">
+
+  <p class="eyebrow">子 站 点</p>
+  <section class="subsite">
+    <a class="subsite-card" href="jieban/">
+      <span class="subsite-tag">/jieban/</span>
+      <span class="subsite-body">
+        <span class="subsite-name">结伴</span>
+        <span class="subsite-desc">好好生活的人，终会相逢 —— 四个频道：知足 · 恒与 · 知和 · 愈多</span>
+      </span>
+      <span class="subsite-go">进入 →</span>
+    </a>
+  </section>
 
   <p class="eyebrow">定 位</p>
   <section class="manifesto">
@@ -485,7 +551,8 @@ footer a:hover { color: var(--cinnabar); }
     <p>
       <a href="https://github.com/daoApps">GitHub 组织</a> ·
       <a href="https://github.com/daoApps/daoApps">主仓库</a> ·
-      <a href="https://github.com/daoApps/daoNexus">应用枢纽</a>
+      <a href="https://github.com/daoApps/daoNexus">应用枢纽</a> ·
+      <a href="jieban/">结伴 · 子站</a>
     </p>
     <p>道用 · daoApps</p>
   </div>
