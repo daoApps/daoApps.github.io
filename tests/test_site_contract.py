@@ -12,7 +12,9 @@
 6. 侧栏开关的行为绑定——主题渲染两份同名开关而脚本只认 DOM 中第一个（被隐去的
    那份），可见的那份必须由 `dao.js` 补绑，否则宽屏点不动、窄屏唤不出抽屉；
 7. 行为脚本的执行时机——`dao.js` 由 Sphinx 注入 `<head>`，必须等 DOM 就绪再取节点，
-   否则选择器全部落空且不报错（开关点了没反应、淡入类也挂不上）。
+   否则选择器全部落空且不报错（开关点了没反应、淡入类也挂不上）；
+8. 站内搜索可用性——中文分词依赖 jieba 必须列入构建依赖，且 `language_data.js`
+   的词干器引用必须指向真实存在的全局名（Sphinx 拼错会让搜索整个打不开）。
 
 运行（需含 Sphinx 依赖的 Python 环境，本项目为 py314）：
 
@@ -253,6 +255,46 @@ def test_behavior_script_waits_for_dom():
         f"dao.js 存在裸在顶层执行的 querySelector（花括号深度 {depths}）——"
         "脚本在 <head> 里跑，取到的必是空集"
     )
+
+
+def test_search_dependencies_include_jieba():
+    """中文分词依赖必须列入构建依赖，否则中文内容静默不进索引。
+
+    SearchChinese 把切词交给 jieba，未安装时 `cut_for_search` 返回空集：中文页面
+    一个字都进不了 searchindex.js，构建期不报任何错，只是搜不到。依赖文件与 CI 安装
+    步骤同源，锁住这里就锁住了 CI。
+    """
+    text = (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8")
+    assert re.search(r"^jieba", text, flags=re.M), (
+        "requirements.txt 未列入 jieba，中文内容不会进入搜索索引"
+    )
+
+
+def test_search_stemmer_reference_is_valid():
+    """`language_data.js` 的词干器引用必须指向真实存在的全局名。
+
+    SearchChinese 声明 js_stemmer_rawcode = 'english-stemmer.js'（服务端也用 snowball
+    的 english 词干器处理拉丁词），但 Sphinx 生成该文件时按 language_name 拼全局名：
+    中文站是 'Chinese' → 拼出 `window.Stemmer = ChineseStemmer;`，而文件里定义的是
+    EnglishStemmer。引用落空后 `window.Stemmer` 为 undefined，searchtools.js 的
+    `new Stemmer()` 随即抛错——每页控制台报错，搜索框彻底打不开。
+
+    conf.py 按词干器文件名推导真实名字改正这一行。这里真实调用该函数而不是断言源码
+    字符串，是为了保证补丁真的接到了 IndexBuilder 上、且产出确实不含坏名字。
+    """
+    from types import SimpleNamespace
+
+    from sphinx.search.zh import SearchChinese
+
+    conf = _load_conf()
+    code = conf.IndexBuilder.get_js_stemmer_code(SimpleNamespace(lang=SearchChinese({})))
+
+    assigned = re.findall(r"window\.Stemmer\s*=\s*(\w+);", code)
+    assert assigned == ["EnglishStemmer"], f"词干器引用名不对：{assigned}"
+    for name in assigned:
+        assert re.search(rf"\b{name}\s*=", code), (
+            f"language_data.js 引用了未定义的 {name}，客户端搜索会抛 ReferenceError"
+        )
 
 
 def test_six_covenant_items_present():

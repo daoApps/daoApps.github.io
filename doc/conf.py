@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from sphinx.search import IndexBuilder
+
 # -- 项目元信息 ------------------------------------------------------------
 
 project = "道用"
@@ -87,6 +89,54 @@ html_theme_options = {
     "show_toc_level": 3,
     "extra_footer": "",  # 实际内容由 _inject_footer 按页注入
 }
+
+# -- 搜索 ------------------------------------------------------------------
+# 中文站内搜索有两道 Sphinx 默认不放行的坎，缺一道搜索就整个不可用：
+#
+#   1. 分词：SearchChinese 把中文切词交给 jieba；未安装时 cut_for_search 返回空集，
+#      中文内容一个字都进不了索引。构建期不报任何错，只是搜不到——requirements.txt
+#      已列入 jieba。
+#   2. 词干器：SearchChinese 声明 js_stemmer_rawcode = 'english-stemmer.js'（服务端
+#      同样用 snowball 的 english 词干器处理拉丁词，两端必须一致，否则索引里的词
+#      与查询串的词形对不上）。但 Sphinx 生成 language_data.js 时按 language_name
+#      拼全局名，中文站是 'Chinese' → 拼出 `window.Stemmer = ChineseStemmer;`，
+#      而该文件里定义的是 EnglishStemmer。引用落空后 window.Stemmer 为 undefined，
+#      searchtools.js 的 `new Stemmer()` 随即抛错——搜索框彻底打不开，而且每页都
+#      在控制台报 "ChineseStemmer is not defined"（Sphinx 9.1.0 与 8.2.3 同此）。
+#
+# 这里按词干器文件名推导真实全局名（english-stemmer.js → EnglishStemmer）改正那一行。
+# 上游若修好，赋值行上的名字与推导结果一致，本补丁自动失效。
+
+_STEMMER_GLOBAL = re.compile(r"(?:window\.)?Stemmer\s*=\s*(\w+Stemmer);")
+
+
+def _derive_stemmer_global(rawcode: str) -> str:
+    """由词干器文件名推导其导出的全局名，遵循 Sphinx 自身命名约定。
+
+    `english-stemmer.js` → `EnglishStemmer`，`dutch_porter-stemmer.js` →
+    `DutchPorterStemmer`。
+    """
+    name = rawcode.removesuffix(".js").removesuffix("-stemmer")
+    return "".join(part.capitalize() for part in re.split(r"[-_]", name)) + "Stemmer"
+
+
+_original_get_js_stemmer_code = IndexBuilder.get_js_stemmer_code
+
+
+def _get_js_stemmer_code(self) -> str:  # noqa: ANN001
+    code = _original_get_js_stemmer_code(self)
+    rawcode = self.lang.js_stemmer_rawcode
+    if not rawcode:
+        return code
+    found = _STEMMER_GLOBAL.search(code)
+    expected = _derive_stemmer_global(rawcode)
+    # 只在赋值行上比对：词干器定义里本来就含这个名字，拿全量文本判断会永远命中。
+    if found is None or found.group(1) == expected:
+        return code
+    return _STEMMER_GLOBAL.sub(f"window.Stemmer = {expected};", code)
+
+
+IndexBuilder.get_js_stemmer_code = _get_js_stemmer_code
 
 # -- 页脚 ------------------------------------------------------------------
 # 站点页脚分两层：
