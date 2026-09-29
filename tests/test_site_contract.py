@@ -271,30 +271,79 @@ def test_search_dependencies_include_jieba():
 
 
 def test_search_stemmer_reference_is_valid():
-    """`language_data.js` 的词干器引用必须指向真实存在的全局名。
+    """`language_data.js` 里的 Stemmer 必须「有定义，且引用不落空」。
 
-    SearchChinese 声明 js_stemmer_rawcode = 'english-stemmer.js'（服务端也用 snowball
-    的 english 词干器处理拉丁词），但 Sphinx 生成该文件时按 language_name 拼全局名：
-    中文站是 'Chinese' → 拼出 `window.Stemmer = ChineseStemmer;`，而文件里定义的是
-    EnglishStemmer。引用落空后 `window.Stemmer` 为 undefined，searchtools.js 的
-    `new Stemmer()` 随即抛错——每页控制台报错，搜索框彻底打不开。
+    Sphinx 生成该文件时按 language_name 拼全局名：中文站是 'Chinese' → 拼出
+    `Stemmer = ChineseStemmer;`，而词干器文件里定义的是 EnglishStemmer。引用落空后
+    window.Stemmer 为 undefined，searchtools.js 的 `new Stemmer()` 随即抛错——
+    每页控制台报错，搜索框彻底打不开。conf.py 按词干器文件名推导真实名字改正这一行。
 
-    conf.py 按词干器文件名推导真实名字改正这一行。这里真实调用该函数而不是断言源码
-    字符串，是为了保证补丁真的接到了 IndexBuilder 上、且产出确实不含坏名字。
+    ⚠️ 这条断言只在 Sphinx **真的**走 rawcode 分支时才成立，而这是分版本的：
+    Sphinx 给不给 zh 设 js_stemmer_rawcode 并不一致（8.2.3 的 zh 就没设，继承基类
+    的空串；只有 da/de/es/fi/fr/hu/it/nl/no/pt/ro/ru/sv/tr 设了）。rawcode 为空时
+    get_js_stemmer_code 走 js_stemmer_code 分支，Stemmer 由那段代码自己定义，压根
+    不产生引用行——搜索本来就是好的。这时若仍按「引用行叫什么」判定，就会把健康
+    的版本判成坏的（曾经在本地 8.2.3 上误报，挡住 CI 的 gates job）。
     """
     from types import SimpleNamespace
 
     from sphinx.search.zh import SearchChinese
 
     conf = _load_conf()
-    code = conf.IndexBuilder.get_js_stemmer_code(SimpleNamespace(lang=SearchChinese({})))
+    lang = SearchChinese({})
+    code = conf.IndexBuilder.get_js_stemmer_code(SimpleNamespace(lang=lang))
+    assigned = re.findall(r"(?:window\.)?Stemmer\s*=\s*(\w+Stemmer);", code)
 
-    assigned = re.findall(r"window\.Stemmer\s*=\s*(\w+);", code)
-    assert assigned == ["EnglishStemmer"], f"词干器引用名不对：{assigned}"
+    if not lang.js_stemmer_rawcode:
+        # 未走 rawcode 分支：不该出现引用行，且 Stemmer 必须由该段代码自己定义。
+        assert not assigned, f"未设 rawcode 时不该出现词干器引用行：{assigned}"
+        assert re.search(r"\b(?:var\s+)?Stemmer\s*=\s*function|\bfunction\s+Stemmer\b", code), (
+            "language_data.js 未定义 Stemmer，客户端搜索会抛 ReferenceError"
+        )
+        return
+
+    expected = conf._derive_stemmer_global(lang.js_stemmer_rawcode)
+    assert assigned == [expected], f"词干器引用名不对：{assigned}"
     for name in assigned:
         assert re.search(rf"\b{name}\s*=", code), (
             f"language_data.js 引用了未定义的 {name}，客户端搜索会抛 ReferenceError"
         )
+
+
+def test_stemmer_patch_rewrites_mismatched_global_name():
+    """补丁本身必须能把拼错的名字改回真名——不依赖当前 Sphinx 是否给 zh 设 rawcode。
+
+    上一条在 rawcode 为空的 Sphinx 上走不到补丁分支，等于没验证补丁。这里直接拿
+    conf.py 自己的正则与推导函数跑一次改写，保证「真出问题那天」补丁接得住。
+    """
+    conf = _load_conf()
+
+    assert conf._derive_stemmer_global("english-stemmer.js") == "EnglishStemmer"
+    assert conf._derive_stemmer_global("dutch_porter-stemmer.js") == "DutchPorterStemmer"
+
+    broken = "var EnglishStemmer = function () {};\nStemmer = ChineseStemmer;\n"
+    expected = conf._derive_stemmer_global("english-stemmer.js")
+    fixed = conf._STEMMER_GLOBAL.sub(f"window.Stemmer = {expected};", broken)
+
+    assert re.findall(r"(?:window\.)?Stemmer\s*=\s*(\w+Stemmer);", fixed) == [expected]
+    assert re.search(rf"\b{expected}\s*=", fixed), f"改写后引用了未定义的 {expected}"
+
+
+def test_stemmer_patch_is_wired_into_index_builder():
+    """补丁必须真的接到 IndexBuilder 上（用一个自带 rawcode 的语言走通补丁分支）。"""
+    from types import SimpleNamespace
+
+    from sphinx.search.de import SearchGerman
+
+    conf = _load_conf()
+    lang = SearchGerman({})
+    if not lang.js_stemmer_rawcode:
+        pytest.skip("当前 Sphinx 版本未给 de 设 js_stemmer_rawcode")
+    code = conf.IndexBuilder.get_js_stemmer_code(SimpleNamespace(lang=lang))
+    expected = conf._derive_stemmer_global(lang.js_stemmer_rawcode)
+    assigned = re.findall(r"(?:window\.)?Stemmer\s*=\s*(\w+Stemmer);", code)
+    assert assigned == [expected], f"词干器引用名不对：{assigned}"
+    assert re.search(rf"\b{expected}\s*=", code), f"引用了未定义的 {expected}"
 
 
 def test_six_covenant_items_present():

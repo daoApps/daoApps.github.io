@@ -96,13 +96,21 @@ html_theme_options = {
 #   1. 分词：SearchChinese 把中文切词交给 jieba；未安装时 cut_for_search 返回空集，
 #      中文内容一个字都进不了索引。构建期不报任何错，只是搜不到——requirements.txt
 #      已列入 jieba。
-#   2. 词干器：SearchChinese 声明 js_stemmer_rawcode = 'english-stemmer.js'（服务端
-#      同样用 snowball 的 english 词干器处理拉丁词，两端必须一致，否则索引里的词
-#      与查询串的词形对不上）。但 Sphinx 生成 language_data.js 时按 language_name
-#      拼全局名，中文站是 'Chinese' → 拼出 `window.Stemmer = ChineseStemmer;`，
-#      而该文件里定义的是 EnglishStemmer。引用落空后 window.Stemmer 为 undefined，
-#      searchtools.js 的 `new Stemmer()` 随即抛错——搜索框彻底打不开，而且每页都
-#      在控制台报 "ChineseStemmer is not defined"（Sphinx 9.1.0 与 8.2.3 同此）。
+#   2. 词干器：SearchChinese 若声明 js_stemmer_rawcode（服务端同样用 snowball 的
+#      english 词干器处理拉丁词，两端必须一致，否则索引里的词与查询串的词形对不上），
+#      Sphinx 生成 language_data.js 时会按 language_name 拼全局名：中文站是
+#      'Chinese' → 拼出 `Stemmer = ChineseStemmer;`，而该词干器文件里定义的是
+#      EnglishStemmer。引用落空后 window.Stemmer 为 undefined，searchtools.js 的
+#      `new Stemmer()` 随即抛错——搜索框彻底打不开，且每页控制台报
+#      "ChineseStemmer is not defined"。
+#
+#      ⚠️ 这条**分版本成立**，不要写成"所有版本都这样"：Sphinx 给不给 zh 设 rawcode
+#      并不一致——8.2.3 的 zh 就没设（继承 SearchLanguage 的空串），只有
+#      da/de/es/fi/fr/hu/it/nl/no/pt/ro/ru/sv/tr 设了；且 8.2.3 的 non-minified-js
+#      目录里根本没有 english-stemmer.js。rawcode 为空时 get_js_stemmer_code 走
+#      js_stemmer_code 分支，Stemmer 由那段代码自己定义（`var Stemmer = function`），
+#      压根不产生引用行——搜索本来就是好的。因此下面的补丁在 8.2.3 上是空操作，
+#      只在 zh 真的声明了 rawcode 的版本上才生效（防御性补丁，不是修复当前版本）。
 #
 # 这里按词干器文件名推导真实全局名（english-stemmer.js → EnglishStemmer）改正那一行。
 # 上游若修好，赋值行上的名字与推导结果一致，本补丁自动失效。
