@@ -157,6 +157,7 @@ _SITE_FOOTER = (
     '<a href="https://github.com/daoApps/daoApps">主仓库</a> · '
     '<a href="https://github.com/daoApps/daoNexus">应用枢纽</a> · '
     '<a href="/jieban/">结伴 · 子站</a> · '
+    '<a href="/fupan/">复盘 · 子站</a> · '
     '<a href="https://github.com/daoApps/daoApps.github.io">本站源码</a>'
 )
 

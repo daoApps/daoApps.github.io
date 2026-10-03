@@ -1504,3 +1504,190 @@ article.bd-article .org-home .org-note {
     page-break-inside: avoid;
   }
 }
+
+/* ================= 十九 · 复盘子站（doc/fupan/） ================= */
+/* 纪律：所有规则限定在 .fp-* 类内，不外溢到结伴站与组织主页。 */
+
+article.bd-article .fp-seal {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--cinnabar);
+  color: var(--cinnabar);
+  font-size: 26px;
+  letter-spacing: 0.12em;
+  margin: 0 0 20px;
+}
+
+article.bd-article .fp-sub {
+  color: var(--ink-2);
+  font-size: 1.05rem;
+  margin-bottom: 20px;
+}
+
+article.bd-article .fp-quote {
+  border-left: 3px solid var(--cinnabar);
+  padding: 12px 0 12px 18px;
+  margin: 24px 0 32px;
+  color: var(--ink-2);
+}
+
+article.bd-article .fp-quote q {
+  font-style: normal;
+  font-size: 1.05rem;
+}
+
+article.bd-article .fp-quote cite {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  font-style: normal;
+}
+
+article.bd-article .fp-eyebrow {
+  color: var(--cinnabar);
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  margin-top: 48px;
+  margin-bottom: 4px;
+}
+
+article.bd-article .fp-lead {
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+
+article.bd-article .fp-manifesto p {
+  margin-bottom: 14px;
+  line-height: 1.85;
+}
+
+article.bd-article .fp-manifesto .key {
+  color: var(--cinnabar);
+}
+
+article.bd-article .fp-cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0 8px;
+}
+
+article.bd-article .fp-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border: 1px solid var(--cinnabar);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+article.bd-article .fp-btn-primary {
+  background: var(--cinnabar);
+  color: var(--paper);
+}
+
+article.bd-article .fp-btn-ghost {
+  color: var(--cinnabar);
+}
+
+/* 指标块 */
+article.bd-article .fp-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 24px 0;
+}
+
+article.bd-article .fp-metric {
+  flex: 1 1 150px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 16px 14px;
+}
+
+article.bd-article .fp-metric-num {
+  display: block;
+  font-size: 1.9rem;
+  color: var(--cinnabar);
+  line-height: 1.2;
+}
+
+article.bd-article .fp-metric-label {
+  display: block;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+article.bd-article .fp-metric-note {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* 产物卡（两栏，链接到子页） */
+article.bd-article .fp-artifacts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+article.bd-article .fp-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+}
+
+article.bd-article .fp-card:hover {
+  border-color: var(--cinnabar);
+}
+
+article.bd-article .fp-card-tag {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  color: var(--cinnabar);
+  border: 1px solid var(--cinnabar);
+  padding: 2px 10px;
+}
+
+article.bd-article .fp-card-body {
+  flex: 1 1 auto;
+}
+
+article.bd-article .fp-card-name {
+  display: block;
+  font-size: 1rem;
+}
+
+article.bd-article .fp-card-desc {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  margin-top: 2px;
+  line-height: 1.6;
+}
+
+article.bd-article .fp-card-go {
+  flex: 0 0 auto;
+  color: var(--cinnabar);
+  font-size: 0.85rem;
+}
+
+@media print {
+  article.bd-article .fp-card,
+  article.bd-article .fp-metric {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

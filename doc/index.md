@@ -27,6 +27,17 @@
 <p class="lead">组织主页之外，还有一处长期维护的公共客厅</p>
 
 <div class="subsite">
+<a class="subsite-card" href="fupan/">
+<span class="subsite-tag">/fupan/</span>
+<span class="subsite-body">
+<span class="subsite-name">复盘</span>
+<span class="subsite-desc">方法论编排的执行记录 —— 七概念全链路的可复制复盘与质量门实测数据</span>
+</span>
+<span class="subsite-go">进入 →</span>
+</a>
+</div>
+
+<div class="subsite">
 <a class="subsite-card" href="jieban/">
 <span class="subsite-tag">/jieban/</span>
 <span class="subsite-body">
@@ -188,6 +199,7 @@
 ```{toctree}
 :hidden:
 
+fupan/index
 jieban/index
 ```
 
