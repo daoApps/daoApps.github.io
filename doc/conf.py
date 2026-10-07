@@ -8,8 +8,6 @@
 由本文件的构建期守卫与 `tests/test_site_contract.py` 共同守护。
 """
 
-from __future__ import annotations
-
 import re
 from pathlib import Path
 
