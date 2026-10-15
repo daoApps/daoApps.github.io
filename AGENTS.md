@@ -19,6 +19,7 @@
 | 子站 | `doc/jieban/index.md` → `https://daoapps.github.io/jieban/`（结伴） |
 | 源格式 | MyST Markdown（Sphinx），`source_suffix = {".md": "markdown"}` |
 | 发布 | GitHub Actions 构建 → `actions/deploy-pages`（见 `.github/workflows/pages.yml`） |
+| 第二通道 | Read the Docs（`.readthedocs.yml`，同源 `doc/`，仅出 htmlzip） |
 | 产物 | `_build/`，**不入库**（`.gitignore` 已排除） |
 
 **禁止**把 `_build/html` 的产物提交进本仓库：仓库承载源码，产物由每次 push 重新构建。
@@ -32,6 +33,7 @@
 | 改全站配色 / 版式 | `doc/_static/dao.css` | 本文件「样式纪律」 |
 | 改站点结构 / 页脚 / 构建守卫 | `doc/conf.py` | 本文件「构建期守卫」 |
 | 改构建发布流程 | `.github/workflows/pages.yml` | `projects/awesome-okf-xs/.github/workflows/pages.yml`（同族模板） |
+| 改 RTD 构建配置 / 平台语言 | `.readthedocs.yml` + `doc/conf.py`（`_check_rtd_language`） | 本文件「Read the Docs 构建纪律」 |
 | 改内容契约 | `tests/test_site_contract.py` | 先改测试再改内容，或同步改 |
 
 ## 组织主页纪律
@@ -70,6 +72,22 @@
 
 页脚分两层：全站层（组织入口）挂在所有页面；合规层（「本站不提供任何婚恋中介或投资理财服务」）
 只挂在 `/jieban/` 下，避免出现在组织主页上。由 `_inject_footer` 实现，有测试断言。
+
+## Read the Docs 构建纪律
+
+第二发布通道由 `.readthedocs.yml` 驱动，与 GitHub Pages 共用同一份 `doc/` 源，**两边的质量门必须等价**。
+
+- `sphinx.fail_on_warning: true` 就是 CI 的 `-W --keep-going`，平台侧不得放宽。
+- `sphinx.configuration` 必须写死 `doc/conf.py`：RTD 只探测仓库根 `conf.py` 与 `docs/`，
+  本站源目录是 `doc/`（单数），不写会被判成「无配置」而不产出任何东西。
+- **平台语言必须设为 Simplified Chinese（一次性设置）**：RTD 构建时不读 conf.py 的 `language`，
+  而是把平台侧语言拼成 `-D language=<平台语言>` 覆盖它。留在默认英文会让中文分词（jieba）
+  静默失效——构建一条警告都不报，`fail_on_warning` 也拦不住，只是中文搜不到。
+  `doc/conf.py` 的 `_check_rtd_language` 把这条平台设置错误变成构建期硬错误。
+- `formats` 只列 `htmlzip`：`pdf` 走 latex builder 而默认 pdflatex 不认中文字符，
+  `epub` 要求 conf.py 提供 `version`（本站无版本号），两者在当前配置下都会失败。
+- 本站不是可安装的 Python 包（无 pyproject.toml），依赖走 `requirements.txt`，
+  不用 `method: pip` + `path: .` + `extra_requirements`（同族项目 mystx 是包，走的是后者）。
 
 ## 样式纪律
 

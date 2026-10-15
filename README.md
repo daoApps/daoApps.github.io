@@ -22,6 +22,7 @@ daoApps.github.io/
 ├── .github/workflows/pages.yml   gates（契约测试 + actionlint）→ build（Sphinx -W）→ deploy
 ├── AGENTS.md                     智能体入口：任务路由表 + 各类纪律
 ├── requirements.txt              构建依赖
+├── .readthedocs.yml              Read the Docs 构建配置（第二发布通道）
 ├── doc/                          站点源目录（唯一事实来源）
 │   ├── conf.py                   Sphinx 配置 + 构建期守卫 + 按页页脚
 │   ├── index.md                  组织主页
@@ -56,6 +57,23 @@ python -m http.server -d _build/html 8931
 
 > 仓库 Settings → Pages 的 Source 必须是 **GitHub Actions**（不是分支）。
 > 若仍是「Deploy from a branch」，部署 job 会失败。
+
+## 发布（第二通道）：Read the Docs
+
+同一份 `doc/` 源另由 Read the Docs 构建，配置见 `.readthedocs.yml`：
+
+| 配置项 | 取值 | 理由 |
+|---|---|---|
+| `build.tools.python` | `3.14` | 与 CI 的 `setup-python` 对齐，避免只在一边复现的构建差异 |
+| `sphinx.configuration` | `doc/conf.py` | 源目录是 `doc/`（单数），不在 RTD 默认探测的 `docs/`，必须写死 |
+| `sphinx.fail_on_warning` | `true` | 等价 CI 的 `-W --keep-going`，平台侧不放宽质量门 |
+| `formats` | 仅 `htmlzip` | `pdf` 走 latex builder（默认 pdflatex 不认中文），`epub` 要求 conf.py 有 `version`（本站无版本号），两者均会失败 |
+| `python.install` | `requirements.txt` | 本站不是可安装的 Python 包（无 pyproject.toml），故不用 `method: pip` + `path: .` |
+
+> **平台侧必做（一次性）**：RTD 项目 Admin → Settings → **Language 选 Simplified Chinese**。
+> RTD 构建时用 `-D language=<平台语言>` 覆盖 `conf.py` 的 `language`，平台留在默认英文会让
+> 中文分词（jieba）静默失效——构建一条警告都不报，只是中文搜不到。
+> `doc/conf.py` 的 `_check_rtd_language` 守卫会直接把这种构建打红，不会让它悄悄上线。
 
 ## 内容纪律（摘要）
 

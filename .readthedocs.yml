@@ -1,0 +1,44 @@
+# .readthedocs.yml
+# Read the Docs 配置文件
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+#
+# 与 GitHub Pages（.github/workflows/pages.yml）并存：两处构建同一份 doc/ 源，
+# 差别只在执行方式，不在内容。选型取舍见 README「发布」一节。
+
+# Required
+version: 2
+
+build:
+  # ubuntu-24.04 是 RTD 当前推荐的 LTS 构建镜像；不用 ubuntu-26.04 ——
+  # 该镜像上的 mambaforge 工具链解析失败（同族项目 libs/mystx 踩过，
+  # 见其 .readthedocs.yml 注释与 RTD build 35084329）。本站只用 pip 依赖
+  # （requirements.txt），不涉 conda，直接用 CPython 即可。
+  os: ubuntu-24.04
+  tools:
+    # 与 .github/workflows/pages.yml 的 setup-python 对齐（同为 3.14），
+    # 避免「CI 绿、RTD 红」这类只在一边复现的构建。
+    python: "3.14"
+
+sphinx:
+  # 站点源在 doc/（单数），不在 Sphinx/RTD 默认探测的 docs/ —— 必须显式指定，
+  # 否则 RTD 判定为「无配置」而不构建。
+  configuration: doc/conf.py
+  # 与 CI 的 `-W --keep-going` 同一条硬约束：警告即失败。
+  # 代价为零：本站两条构建链路（html、以及 htmlzip 实际走的 singlehtml）
+  # 在本地 Python 3.14 + Sphinx 9.1 下均零警告，实测无遗留告警。
+  fail_on_warning: true
+
+# 只出 htmlzip（RTD 的 htmlzip 走 singlehtml 构建后打包，已实测零警告）。
+#   不加 pdf：走 latex builder，Sphinx 默认 pdflatex 不认中文字符，且本站既未配
+#   latex_engine 也未装 CJK 字体，必然失败；
+#   不加 epub：走 epub builder，Sphinx 要求 conf.py 提供 version，本站无版本号，
+#   构建直接报「对于 EPUB3 格式，配置项“version”的值不能为空」。
+# 日后若给 doc/conf.py 补上 version，可把 epub 加回 formats。
+formats:
+  - htmlzip
+
+python:
+  install:
+    # 本站不是可安装的 Python 包（无 pyproject.toml），故用 requirements 文件；
+    # 同族项目 mystx 是包，走的是 method: pip + path: . + extra_requirements。
+    - requirements: requirements.txt

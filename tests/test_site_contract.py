@@ -15,6 +15,9 @@
    否则选择器全部落空且不报错（开关点了没反应、淡入类也挂不上）；
 8. 站内搜索可用性——中文分词依赖 jieba 必须列入构建依赖，且 `language_data.js`
    的词干器引用必须指向真实存在的全局名（Sphinx 拼错会让搜索整个打不开）。
+9. RTD 构建契约——配置指向 `doc/` 源与 `requirements.txt`，且 Read the Docs
+   平台语言必须为中文：RTD 用 `-D language=<平台语言>` 覆盖 conf.py，
+   平台留在默认英文会让中文分词静默失效（构建不报错，只是搜不到）。
 
 运行（需含 Sphinx 依赖的 Python 环境，本项目为 py314）：
 
@@ -404,6 +407,69 @@ def test_jieban_keeps_no_form_or_popup():
         text = md.read_text(encoding="utf-8").lower()
         assert "<form" not in text, f"{md.name} 出现表单"
         assert "modal" not in text, f"{md.name} 出现弹窗标记"
+
+
+# -- Read the Docs 构建契约 -------------------------------------------------
+
+
+def test_readthedocs_config_points_at_site_source():
+    """RTD 配置必须显式指向 doc/conf.py 与 requirements.txt。
+
+    RTD / Sphinx 只默认探测仓库根的 `conf.py` 与 `docs/`；本站源目录是 `doc/`
+    （单数），不写死路径会被判成「无配置」，构建不产出任何东西。
+    """
+    text = (REPO_ROOT / ".readthedocs.yml").read_text(encoding="utf-8")
+    assert "configuration: doc/conf.py" in text, "RTD 未指向 doc/conf.py"
+    assert "requirements: requirements.txt" in text, "RTD 未安装本站构建依赖"
+    assert re.search(r"fail_on_warning:\s*true", text), (
+        "RTD 未开启 fail_on_warning，平台构建会比 CI 宽松——`-W` 是本站死守的硬约束"
+    )
+
+
+def test_rtd_language_guard_accepts_chinese_platform_code(monkeypatch):
+    """平台侧 `zh-cn`（RTD 的简体中文码）与其内部映射结果同为 Sphinx 的 zh_CN。"""
+    conf = _load_conf()
+    monkeypatch.setenv("READTHEDOCS_LANGUAGE", "zh-cn")
+    conf._check_rtd_language(None, None)  # 不抛异常即通过
+
+
+def test_rtd_language_guard_accepts_legacy_platform_code(monkeypatch):
+    """平台侧留旧码 `zh_CN` 也放行——归一化后与 conf.py 等价。"""
+    conf = _load_conf()
+    monkeypatch.setenv("READTHEDOCS_LANGUAGE", "zh_CN")
+    conf._check_rtd_language(None, None)
+
+
+def test_rtd_language_guard_rejects_non_chinese_platform_language(monkeypatch):
+    """平台语言留在默认英文 = 中文分词静默失效，必须在构建期拦下。
+
+    实测 `-D language=en` 全程无告警，`fail_on_warning` 拦不住这类哑失效，
+    只能由本守卫兜底。
+    """
+    conf = _load_conf()
+    monkeypatch.setenv("READTHEDOCS_LANGUAGE", "en")
+    with pytest.raises(RuntimeError, match="Simplified Chinese"):
+        conf._check_rtd_language(None, None)
+
+
+def test_rtd_language_guard_is_inert_outside_rtd(monkeypatch):
+    """本地与 GitHub Actions 构建不带 READTHEDOCS_LANGUAGE，守卫必须放行。"""
+    conf = _load_conf()
+    monkeypatch.delenv("READTHEDOCS_LANGUAGE", raising=False)
+    conf._check_rtd_language(None, None)
+
+
+def test_rtd_language_guard_is_wired_into_setup():
+    """守卫必须真的挂到 `config-inited` 上，否则写了个永不触发的装饰品。"""
+    conf = _load_conf()
+    events: list[tuple[str, str]] = []
+
+    class _App:
+        def connect(self, event, handler):
+            events.append((event, handler.__name__))
+
+    conf.setup(_App())
+    assert ("config-inited", "_check_rtd_language") in events
 
 
 # -- 构建期守卫：版本身份证 ------------------------------------------------

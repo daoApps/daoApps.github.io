@@ -8,6 +8,7 @@
 由本文件的构建期守卫与 `tests/test_site_contract.py` 共同守护。
 """
 
+import os
 import re
 from pathlib import Path
 
@@ -206,7 +207,39 @@ def _check_version_labels(app, config):  # noqa: ANN001
         raise RuntimeError("引文版本标注不合规：\n  - " + "\n  - ".join(problems))
 
 
+# -- Read the Docs 平台语言守卫 --------------------------------------------
+# RTD 构建时不读 conf.py 的 language，而是把**平台侧**项目语言拼进命令行：
+# `-D language=<平台语言>` —— 见 readthedocs.org 的 doc_builder/backends/sphinx.py
+# （get_language 取 project.language，经 OLD_LANGUAGES_CODE_MAPPING 把 `zh-cn`
+# 映射回 Sphinx 认识的 `zh_CN`）。`-D` 优先级高于 conf.py，即平台设置说了算。
+#
+# 于是「平台语言留在默认英文」是一种**静默失效**：构建期一条警告都不报
+# （fail_on_warning 也拦不住，实测 -D language=en 全程无告警），只是中文分词
+# 不再加载 jieba，中文内容一个字都进不了搜索索引——与上面「搜索」一节记录的
+# 两个坑同源，都是「构建不报错，只是搜不到」。
+# 本站既有纪律是把陷阱变成机器可拦截的约束，故在此把它变成构建期硬错误。
+#
+# 平台侧动作（一次性）：RTD 项目 Admin → Settings → Language 选
+# Simplified Chinese（RTD 代码 `zh-cn`，经映射后传给 Sphinx 的 `zh_CN` 与本文件同源）。
+
+
+def _check_rtd_language(app, config):  # noqa: ANN001
+    """RTD 平台语言必须与 conf.py 的 language 同源，否则中文搜索会静默失效。"""
+    rtd_language = os.environ.get("READTHEDOCS_LANGUAGE")
+    if not rtd_language:
+        return  # 本地与 GitHub Actions 构建不经过 RTD，不设此变量
+    # 归一化后比较：平台侧 zh-cn / 旧码 zh_CN 都与本文件的 zh_CN 等价
+    if rtd_language.replace("_", "-").lower() != language.replace("_", "-").lower():
+        raise RuntimeError(
+            f"Read the Docs 平台语言为 {rtd_language!r}，与 doc/conf.py 的 {language!r} 不一致："
+            f"RTD 会用 -D language={rtd_language} 覆盖 conf.py，中文分词依赖（jieba）不再加载，"
+            "中文内容静默不进搜索索引。请在 RTD 项目 Admin → Settings → Language "
+            "选择 Simplified Chinese。"
+        )
+
+
 def setup(app):  # noqa: ANN001
     app.connect("config-inited", _check_version_labels)
+    app.connect("config-inited", _check_rtd_language)
     app.connect("html-page-context", _inject_footer)
     return {"parallel_read_safe": True, "parallel_write_safe": True}
