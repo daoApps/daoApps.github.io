@@ -84,9 +84,13 @@ def test_org_home_exists():
 
 
 def test_org_home_lists_fourteen_repos():
+    """条目仓库取自卡片的 `:link:` 目标（卡片已由 {grid-item-card} 生成）。
+
+    首屏 CTA 也链到 daoNexus，但它走的是正文 Markdown 链接、不带 `:link:` 选项，
+    因此不会混进这里的清单——去重逻辑仍然按「重复出现不等于多收录一个仓库」写。
+    """
     text = (DOC_DIR / "index.md").read_text(encoding="utf-8")
-    hrefs = re.findall(r'href="https://github\.com/daoApps/([\w.-]+)"', text)
-    # 去重：首屏 CTA 也会链到 daoNexus，重复出现不等于多收录一个仓库
+    hrefs = re.findall(r"^:link: https://github\.com/daoApps/([\w.-]+)$", text, flags=re.M)
     listed = [h for h in dict.fromkeys(hrefs) if h != "dao-research-assistant"]
     assert len(listed) == 14, f"组织主页应收录 14 个仓库，实为 {len(listed)}"
     for repo in ORG_REPOS:
@@ -94,15 +98,21 @@ def test_org_home_lists_fourteen_repos():
 
 
 def test_org_home_five_groups_with_matching_counts():
+    """分组、计数、卡片三者自洽（分组/计数/和=14）。
+
+    卡片改由 `{grid-item-card}` 指令生成、分组包裹层改用 `.g-<slug>` 供 `--accent`，
+    断言随之从改造前的 HTML 字面量（`class="group"` / `class="card"`）换成新习语；
+    守护的语义没变，仍是「五组、计数与卡片数一致」。
+    """
     text = (DOC_DIR / "index.md").read_text(encoding="utf-8")
-    assert len(re.findall(r'class="group"', text)) == 5, "组织主页应有 5 类用法分组"
+    assert len(re.findall(r'<div class="group g-', text)) == 5, "组织主页应有 5 类用法分组"
     for group in ORG_GROUPS:
         assert f"<h3>{group}</h3>" in text, f"组织主页缺少分组：{group}"
 
     counts = [int(n) for n in re.findall(r'class="count">(\d+)<', text)]
     assert counts == [2, 3, 2, 3, 4], f"分组计数与清单不符：{counts}"
     assert sum(counts) == 14
-    assert len(re.findall(r'class="card"', text)) == 14, "组织主页卡片数应为 14"
+    assert len(re.findall(r"::\{grid-item-card\}", text)) == 14, "组织主页卡片数应为 14"
 
 
 def test_org_home_links_to_jieban_subsite():
@@ -261,6 +271,22 @@ def test_behavior_script_waits_for_dom():
     assert depths and all(d > 0 for d in depths), (
         f"dao.js 存在裸在顶层执行的 querySelector（花括号深度 {depths}）——"
         "脚本在 <head> 里跑，取到的必是空集"
+    )
+
+
+def test_scroll_reveal_covers_org_home_cards():
+    """组织主页卡片换了生成方式，滚动淡入的选择器必须跟着换。
+
+    卡片从 `<a class="card">` 改成 sphinx-design 的 `{grid-item-card}`（DOM 上是
+    `.sd-card`），而 dao.js 的 REVEAL_SEL 里写的是 `.org-home .card`。选择器落空
+    不会报错：那 14 张卡照常可见、照常可点，只是**不再淡入**——一类哑失效。
+    这条断言把「换了元素忘了动效」变成机器可拦截的约束。
+    """
+    home = (DOC_DIR / "index.md").read_text(encoding="utf-8")
+    assert ":::{grid-item-card}" in home, "卡片未由指令生成，本断言的前提变了"
+    js = re.sub(r"/\*.*?\*/", "", JS_FILE.read_text(encoding="utf-8"), flags=re.S)
+    assert '".org-home .sd-card"' in js, (
+        "dao.js 的淡入选择器未覆盖组织主页卡片的新类名 .sd-card，14 张卡会失去入场动效"
     )
 
 

@@ -1169,6 +1169,16 @@ article.bd-article .org-home .cta {
   margin: 40px 0 0;
 }
 
+/* `{container} cta` 内的 Markdown 内容会落在一个段落里，按钮排在段内——
+ * 与结伴站 `.jb-cta p` 同法，排布规则挂在段上，容器只负责外边距。 */
+article.bd-article .org-home .cta p {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
 article.bd-article .org-home .cta .btn {
   display: inline-block;
   padding: 12px 30px;
@@ -1348,6 +1358,70 @@ article.bd-article .org-home .manifesto em {
 
 /* —— 应用五组 —— */
 
+/* 五组强调色：由分组包裹层的类供给 `--accent`，供分组色条与卡片左边框继承
+ * （改造前是 `style="--accent: var(--g-shequ)"` 行内声明，收进样式表以免版式
+ * 知识散落在文档源里）。 */
+article.bd-article .org-home .g-shequ { --accent: var(--g-shequ); }
+article.bd-article .org-home .g-xiaolv { --accent: var(--g-xiaolv); }
+article.bd-article .org-home .g-gongju { --accent: var(--g-gongju); }
+article.bd-article .org-home .g-zhifu { --accent: var(--g-zhifu); }
+article.bd-article .org-home .g-jizuo { --accent: var(--g-jizuo); }
+
+/* sphinx-design 适配层（与结伴站 `.jb-card` 同法）。卡片改由 `{grid-item-card}`
+ * 生成，DOM 上多了 sd 自带的四层壳；这里抵消两类东西：
+ *   1. `!important` 工具类——`sd-shadow-sm` 会盖掉本站阴影，`sd-font-weight-bold`
+ *      会把卡名刷成粗体，`sd-mb-4` 会在网格下方多留 1.5rem；
+ *   2. bootstrap 栅格——`.sd-row` 的 flex 与断点列宽（`1 1 3 3` 在 `md` 起就是
+ *      三列固定宽），改回本站原来的 auto-fit 网格，保证列数与间距和改造前一致。
+ * 卡体与文字的间距仍在下面「卡片」一节里定义，此处只做归零与还原。 */
+article.bd-article .org-home .cards {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0 !important;
+}
+
+article.bd-article .org-home .cards .sd-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+article.bd-article .org-home .cards .sd-col {
+  width: auto;
+  max-width: none;
+  flex: none;
+  padding: 0;
+  margin: 0;
+}
+
+article.bd-article .org-home .cards .sd-card-body {
+  padding: 0;
+}
+
+/* 卡名还原成行内盒。改造前是 `<span class="name">`，与 `.card` 的 strut 合成一个
+ * 受两者共同撑高的行盒；sd 生成的 `.sd-card-title` 是块级 div，行盒只由自己决定，
+ * 每张卡矮约 1.4px。改回行内后行盒算法与改造前一致。 */
+article.bd-article .org-home .cards .sd-card-title {
+  display: inline;
+  margin: 0;
+  font-weight: 400 !important;
+}
+
+article.bd-article .org-home .cards .sd-card-text {
+  margin: 0;
+}
+
+/* 整卡可点的拉伸链接：sd 让锚点留在文档流里（靠 `::after` 铺满卡片），
+ * 锚点内又是 `font-size: 0` 的隐藏链接文本，于是卡体末尾多撑出一个约 27px 的
+ * 匿名行盒——实测每张卡凭空高出一行。改让锚点绝对定位铺满卡片：
+ * 既把这一行收掉，`::after` 的包含块也从卡片本身移到同样铺满的锚点上，
+ * 整卡可点区域不变。 */
+article.bd-article .org-home .cards .sd-card .sd-stretched-link {
+  position: absolute;
+  inset: 0;
+}
+
 article.bd-article .org-home .group {
   max-width: var(--org-measure);
   margin: 0 auto 3.4rem;
@@ -1388,20 +1462,20 @@ article.bd-article .org-home .cards {
   gap: 14px;
 }
 
-article.bd-article .org-home .cards .card {
+article.bd-article .org-home .cards .sd-card {
   position: relative;
   display: block;
   padding: 20px 22px 20px 25px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--r-m);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow) !important;
   color: inherit;
   text-decoration: none;
   transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
-article.bd-article .org-home .cards .card::before {
+article.bd-article .org-home .cards .sd-card::before {
   content: "";
   position: absolute;
   left: 0;
@@ -1412,35 +1486,42 @@ article.bd-article .org-home .cards .card::before {
   background: var(--accent, var(--line-strong));
 }
 
-article.bd-article .org-home .cards .card:hover {
+article.bd-article .org-home .cards .sd-card:hover {
   border-color: var(--line-strong);
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(58, 53, 46, 0.05), 0 10px 26px rgba(58, 53, 46, 0.08);
+  box-shadow: 0 2px 4px rgba(58, 53, 46, 0.05), 0 10px 26px rgba(58, 53, 46, 0.08) !important;
 }
 
-article.bd-article .org-home .cards .card .name {
+article.bd-article .org-home .cards .sd-card .sd-card-title {
   font-size: 1.02rem;
   letter-spacing: 0.03em;
   color: var(--ink);
 }
 
-article.bd-article .org-home .cards .card .repo {
+article.bd-article .org-home .cards .sd-card .repo {
   display: block;
   font-family: var(--sans);
   font-size: 11.5px;
+  /* 改造前 `.repo` 是裸 span，继承 `body` 的 1.85；现在落在 `sd-card-text` 段落里，
+   * 会继承第十二节的 `article.bd-article p { line-height: 2 }`，行盒高出 1.7px。
+   * 显式回到站点的正文行高比例，行盒与改造前一致。 */
+  line-height: 1.85;
   letter-spacing: 0.02em;
   color: var(--ink-3);
   margin: 2px 0 8px;
 }
 
-article.bd-article .org-home .cards .card .desc {
+/* 只给**末段**（描述文字）上字号与行高。卡里的 repo 标识也落在 `sd-card-text`
+ * 段落里，若整类都吃这条 `line-height: 1.7`，repo 会按 1.7×11.5 算行高，
+ * 比改造前（主题 1.85 比例）矮 1.7px。限定末段即让 repo 段沿用主题比例，
+ * 不必把主题的数值抄进来。 */
+article.bd-article .org-home .cards .sd-card .sd-card-text:last-child {
   font-size: 13.5px;
   line-height: 1.7;
   color: var(--ink-2);
-  margin: 0;
 }
 
-article.bd-article .org-home .cards .card:hover .name {
+article.bd-article .org-home .cards .sd-card:hover .sd-card-title {
   color: var(--cinnabar-deep);
 }
 
@@ -1497,7 +1578,7 @@ article.bd-article .org-home .org-note {
 }
 
 @media print {
-  article.bd-article .org-home .cards .card,
+  article.bd-article .org-home .cards .sd-card,
   article.bd-article .org-home .manifesto,
   article.bd-article .org-home .subsite-card {
     break-inside: avoid;

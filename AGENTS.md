@@ -41,8 +41,19 @@
 
 - **仓库清单的唯一事实来源**是 `daoApps/daoNexus` 的 `src/data/apps.ts`；该文件只覆盖前端的
   9 个应用，组织主页是超集（另含支付与链路 3 个、系统与基座 4 个），共 **14 个仓库 / 5 类用法**。
-- 分组标题 `<h3>`、计数 `<span class="count">`、卡片 `<a class="card">` 三者必须自洽，
-  由 `tests/test_site_contract.py` 断言（`counts == [2, 3, 2, 3, 4]` 且卡片总数 14）。
+- 分组标题 `<h3>`、计数 `<span class="count">`、卡片 `{grid-item-card}`（仓库地址写在 `:link:`）
+  三者必须自洽，由 `tests/test_site_contract.py` 断言（`counts == [2, 3, 2, 3, 4]` 且 `:link:` 条目 14）。
+- 卡片由 sphinx-design 的 `{grid}` + `{grid-item-card}` 生成（与结伴站同一习语），不再手写
+  `<a class="card">`。改这片区域时注意三处**不可随手替换**的裸 HTML：
+  ① 分组标题 `<h3>` 与计数/说明 span——换成 Markdown `###` 会让 5 个组名进右侧页内 TOC 并生成锚点；
+  ② 分组包裹层 `<div class="group g-<slug>">`——`--accent` 由它的类供给，不要再写行内 `style`；
+  ③ `.cards`（`:class-container:`）——网格列数仍由本页 CSS 的 auto-fit 决定。
+- dao.css「十八 · 组织主页」节里有一段 **sphinx-design 适配层**：抵消 sd 的 `!important`
+  工具类（`sd-shadow-sm` / `sd-font-weight-bold` / `sd-mb-4`）与 bootstrap 栅格（`.sd-row` /
+  `.sd-col`），把版式交还本站规则。改卡片样式前先看这段，别在别处再堆特异性。
+  ⚠️ 这一层贴着 sphinx-design 的卡片 DOM（`.sd-card` / `.sd-card-body` / `.sd-card-title` /
+  `.sd-card-text` / `.sd-stretched-link`）写，**升级 sphinx-design 后必须重新做一遍改前改后比对**
+  （几何 + 计算样式 + 截图），因为它的类名或默认值一变，这里只会静默失效或反向生效。
 - 空仓库（如 `dao-research-assistant`）只在收录说明里点名「筹备中」，**不列入卡片**。
 
 ## 结伴内容纪律

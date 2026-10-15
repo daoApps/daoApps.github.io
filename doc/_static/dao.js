@@ -32,7 +32,7 @@ domReady(function () {
   var REVEAL_SEL = [
     // 组织主页（doc/index.md）
     ".org-home .seal",
-    ".org-home .card",
+    ".org-home .sd-card",
     ".org-home .manifesto",
     ".org-home .subsite-card",
     // 结伴子站（doc/jieban/**）
