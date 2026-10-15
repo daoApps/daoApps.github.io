@@ -53,7 +53,8 @@
   `.sd-col`），把版式交还本站规则。改卡片样式前先看这段，别在别处再堆特异性。
   ⚠️ 这一层贴着 sphinx-design 的卡片 DOM（`.sd-card` / `.sd-card-body` / `.sd-card-title` /
   `.sd-card-text` / `.sd-stretched-link`）写，**升级 sphinx-design 后必须重新做一遍改前改后比对**
-  （几何 + 计算样式 + 截图），因为它的类名或默认值一变，这里只会静默失效或反向生效。
+  （`python tests/visual_equivalence.py --baseline <升级前的提交>`），因为它的类名或默认值一变，
+  这里只会静默失效（版式照旧但不再生效）或反向生效。
 - 空仓库（如 `dao-research-assistant`）只在收录说明里点名「筹备中」，**不列入卡片**。
 
 ## 结伴内容纪律
@@ -140,6 +141,29 @@ python -m http.server -d _build/html 8931
 ```
 
 提交前两条都必须通过。CI 的 `gates` job 跑测试，`build` job 跑 `-W` 构建，`deploy` job 才发布。
+
+### 视觉等价性比对（改了版式 / 样式 / DOM 生成方式时必跑）
+
+上面两条门禁都是**源码层**的：契约测试断言的是 Markdown 字面量，`-W` 只管 Sphinx
+告警。它们拦不住「页面照常打开、照常可点，只是悄悄少了几像素内边距、掉了一行动效」
+这类哑失效。改版式时补跑第三条：
+
+```bash
+# 需一次性准备：pip install playwright（自带浏览器没下载会自动回退系统 Edge/Chrome）
+python tests/visual_equivalence.py                      # 与 HEAD 比：工作区改动该无视觉副作用
+python tests/visual_equivalence.py --baseline HEAD~1    # 复核某次版式重构
+python tests/visual_equivalence.py --pages all --widths 768,1280   # 全站扫，查外溢
+```
+
+它把基线版本（`--baseline`，默认 `HEAD`，由 `git archive` 取出）与工作区各构建一份，
+在浏览器里对拍：几何（文档坐标，容差 0.5px）、计算样式、卡片盒子、整卡可点的命中
+测试、渲染文本 / 链接目标 / 字体栈、整页截图的像素强度。探针级比对只作用于
+`index.html`；`--pages all` 其余页面走像素比对，用来确认改动没有外溢。
+
+判 FAIL 的只有结构性差异；文字抗锯齿噪声、以及 flex 容器内不参与渲染的换行空白
+（`innerText` 会计入）只报 WARN。Mermaid 图与滚动淡入是异步有状态的，故工具会把
+**基线连拍两次**得到「噪声地板」，改前改后的像素差只与地板比较——否则会把异步渲染
+的抖动误判成回归。它有状态与浏览器依赖，**不进 CI**，按需运行。
 
 ## 参考
 
