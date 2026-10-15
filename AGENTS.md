@@ -34,6 +34,7 @@
 | 改站点结构 / 页脚 / 构建守卫 | `doc/conf.py` | 本文件「构建期守卫」 |
 | 改构建发布流程 | `.github/workflows/pages.yml` | `projects/awesome-okf-xs/.github/workflows/pages.yml`（同族模板） |
 | 改 RTD 构建配置 / 平台语言 | `.readthedocs.yml` + `doc/conf.py`（`_check_rtd_language`） | 本文件「Read the Docs 构建纪律」 |
+| 改通道切换按钮 / 清单 | `doc/_static/switcher.json` + `doc/conf.py`（`switcher` / `primary_sidebar_end`） | 本文件「Read the Docs 构建纪律」 |
 | 改内容契约 | `tests/test_site_contract.py` | 先改测试再改内容，或同步改 |
 
 ## 组织主页纪律
@@ -88,6 +89,18 @@
   `epub` 要求 conf.py 提供 `version`（本站无版本号），两者在当前配置下都会失败。
 - 本站不是可安装的 Python 包（无 pyproject.toml），依赖走 `requirements.txt`，
   不用 `method: pip` + `path: .` + `extra_requirements`（同族项目 mystx 是包，走的是后者）。
+- **通道切换按钮**：左侧栏底部的下拉由 `doc/_static/switcher.json` 驱动，两个条目就是两条通道
+  （`gh-pages`→GitHub Pages、`rtd`→Read the Docs），点击跳到**同一页**在另一通道的地址。
+  三条硬约束，破了按钮就哑：
+  1. `switcher.json_url` 必须用**相对路径** `_static/switcher.json`。改成 http(s) 绝对 URL 后，
+     pydata 会在构建期对它发 HTTP 请求校验，读不到即 warning——本站 `-W`（RTD 侧
+     `fail_on_warning`）会直接构建失败，且首次部署前该文件尚不存在，必然自举死锁。
+  2. `version_match` 按构建环境分流（带 `READTHEDOCS` → `rtd`，否则 → `gh-pages`）：
+     同一份 HTML 部署到两处，页面自己认不出身在何处，只能构建期决定高亮谁。
+  3. 条目基址必须**以 `/` 结尾**：前端拼的是「基址 + 当前页路径」，漏了会拼出
+     `https://daoapps.github.iojieban/index.html` 这种坏 URL。
+  另：`primary_sidebar_end` 覆盖了主题默认值，必须把 `sidebar-ethical-ads` 一起带上，
+  否则等于顺手砍掉 RTD 侧的伦理广告位。
 
 ## 样式纪律
 

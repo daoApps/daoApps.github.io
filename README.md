@@ -27,7 +27,7 @@ daoApps.github.io/
 │   ├── conf.py                   Sphinx 配置 + 构建期守卫 + 按页页脚
 │   ├── index.md                  组织主页
 │   ├── jieban/                   结伴子站
-│   └── _static/{dao.css,dao.js}  全站样式与渐进增强行为层
+│   ├── _static/{dao.css,dao.js,switcher.json}  全站样式、渐进增强行为层、通道切换清单
 ├── tests/test_site_contract.py   站点契约测试
 └── _build/                       构建产物（gitignored）
 ```
@@ -74,6 +74,22 @@ python -m http.server -d _build/html 8931
 > RTD 构建时用 `-D language=<平台语言>` 覆盖 `conf.py` 的 `language`，平台留在默认英文会让
 > 中文分词（jieba）静默失效——构建一条警告都不报，只是中文搜不到。
 > `doc/conf.py` 的 `_check_rtd_language` 守卫会直接把这种构建打红，不会让它悄悄上线。
+
+## 通道切换按钮
+
+左侧栏底部有一个下拉按钮，让读者在两条通道间跳到**同一页**（目标页不存在时自动回退到该通道首页）。
+实现是 pydata 系主题（`sphinx_book_theme` 继承 `pydata_sphinx_theme`）内置的 version-switcher，
+本站只用它承载「通道」而非「版本」：
+
+| 环节 | 落点 | 说明 |
+|---|---|---|
+| 清单 | `doc/_static/switcher.json` | 两条目：`gh-pages`→GitHub Pages、`rtd`→Read the Docs。基址必须**以 `/` 结尾**——前端拼的是「基址 + 当前页路径」 |
+| 数据源 | `conf.py` 的 `switcher.json_url` | 必须用**相对路径** `_static/switcher.json`。换成 http(s) 绝对 URL 后，pydata 会在构建期对它发 HTTP 请求校验，读不到即 warning，本站 `-W`（RTD 侧 `fail_on_warning`）会直接构建失败；且首次部署前该文件尚不存在，必然自举死锁 |
+| 当前通道 | `conf.py` 的 `switcher.version_match` | 按构建环境分流：RTD 构建（带 `READTHEDOCS`）→ `rtd`，其余（GitHub Actions / 本地预览）→ `gh-pages`。同一份 HTML 部署到两处，页面自己认不出身在何处 |
+| 挂载点 | `conf.py` 的 `primary_sidebar_end` | 取 `["version-switcher", "sidebar-ethical-ads"]`；主题默认只有后者，覆盖时把它带上，免得顺手砍掉 RTD 侧的伦理广告位 |
+
+> RTD 项目 slug 目前按 `daoapps.readthedocs.io` 写入（导入时把 slug 设为 `daoapps`）。
+> 若最终 slug 不同，只需改 `switcher.json` 里 `rtd` 条目一行，其余无需动。
 
 ## 内容纪律（摘要）
 

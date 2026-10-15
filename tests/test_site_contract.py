@@ -18,6 +18,9 @@
 9. RTD 构建契约——配置指向 `doc/` 源与 `requirements.txt`，且 Read the Docs
    平台语言必须为中文：RTD 用 `-D language=<平台语言>` 覆盖 conf.py，
    平台留在默认英文会让中文分词静默失效（构建不报错，只是搜不到）。
+10. 发布通道切换——左侧栏底部的切换按钮由 `_static/switcher.json` 驱动；
+   清单须覆盖双通道且条目合法，`json_url` 必须是相对路径（绝对 URL 会让
+   pydata 在构建期发 HTTP 请求，读不到即 warning，本站 `-W` 下直接构建失败）。
 
 运行（需含 Sphinx 依赖的 Python 环境，本项目为 py314）：
 
@@ -27,6 +30,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import sys
 from pathlib import Path
@@ -470,6 +474,84 @@ def test_rtd_language_guard_is_wired_into_setup():
 
     conf.setup(_App())
     assert ("config-inited", "_check_rtd_language") in events
+
+
+# -- 发布通道切换（GitHub Pages ↔ Read the Docs） --------------------------
+
+
+def _switcher_entries() -> list[dict[str, str]]:
+    return json.loads((DOC_DIR / "_static" / "switcher.json").read_text(encoding="utf-8"))
+
+
+def test_switcher_manifest_is_wellformed():
+    """每个条目都要有 url / version / name，缺一个 pydata 就会在构建期 warning。
+
+    name 也一并断言：按钮上显示的正是它（pydata 前端 `btn.innerText = entry.name`），
+    缺了会退化成显示 version 值，读者看到 "gh-pages" 这种内部代号。
+    """
+    entries = _switcher_entries()
+    assert entries, "切换清单为空，按钮没有任何可跳转的通道"
+    for entry in entries:
+        assert entry.get("url"), f"条目缺少 url：{entry}"
+        assert entry.get("version"), f"条目缺少 version：{entry}"
+        assert entry.get("name"), f"条目缺少 name（按钮正文取的就是它）：{entry}"
+
+
+def test_switcher_covers_both_channels():
+    """两条通道都要在清单里，且基址各指一域、以 / 结尾。
+
+    pydata 前端把目标地址拼成 `entry.url + 当前页路径`（pydata-sphinx-theme.js
+    `populateVersionSwitcher`），基址漏掉结尾的 `/` 会拼出
+    `https://daoapps.github.iojieban/index.html` 这种坏 URL。
+    """
+    by_version = {e["version"]: e for e in _switcher_entries()}
+    assert set(by_version) == {"gh-pages", "rtd"}, f"清单未覆盖双通道：{set(by_version)}"
+    assert by_version["gh-pages"]["url"].startswith("https://daoapps.github.io/")
+    assert by_version["rtd"]["url"].startswith("https://daoapps.readthedocs.io/")
+    for entry in by_version.values():
+        assert entry["url"].endswith("/"), f"基址未以 / 结尾，会拼出坏 URL：{entry['url']}"
+
+
+def test_switcher_json_url_is_relative():
+    """数据源必须走相对路径读本地文件。
+
+    换成 http(s) 绝对 URL 后，pydata 会在构建期对它发 requests.get 校验，读不到
+    即 warning——本站 -W（RTD 侧 fail_on_warning）会让构建直接失败；且首次部署前
+    该文件还不存在，必然形成自举死锁。相对路径则改为读 app.srcdir 下的本地文件。
+    """
+    url = _load_conf().html_theme_options["switcher"]["json_url"]
+    assert not url.startswith(("http://", "https://")), f"不能是绝对 URL：{url}"
+    assert (DOC_DIR / url).is_file(), f"相对路径未指向真实文件：{url}"
+
+
+def test_version_match_follows_build_channel(monkeypatch):
+    """同一份 HTML 部署到两条通道，只有构建期环境变量能区分该高亮谁。"""
+    monkeypatch.setenv("READTHEDOCS", "True")
+    assert _load_conf().html_theme_options["switcher"]["version_match"] == "rtd"
+
+    monkeypatch.delenv("READTHEDOCS", raising=False)
+    conf = _load_conf()
+    assert conf.html_theme_options["switcher"]["version_match"] == conf._CHANNEL_GH_PAGES
+
+
+def test_version_match_names_a_manifest_entry():
+    """version_match 必须落在清单里，否则按钮找不到当前通道、显示不出名字。"""
+    conf = _load_conf()
+    versions = {e["version"] for e in _switcher_entries()}
+    assert conf.html_theme_options["switcher"]["version_match"] in versions, (
+        f"version_match={conf.html_theme_options['switcher']['version_match']!r} 不在清单 {versions} 中"
+    )
+
+
+def test_version_switcher_mounted_in_sidebar_end():
+    """按钮必须真挂进侧栏底部。
+
+    主题默认的 `primary_sidebar_end` 是 `["sidebar-ethical-ads"]`，不覆盖它按钮
+    根本不会渲染；而覆盖时要把伦理广告位显式带上，免得顺手砍掉 RTD 侧的既有行为。
+    """
+    end = _load_conf().html_theme_options["primary_sidebar_end"]
+    assert "version-switcher" in end, "未把 version-switcher 挂进 primary_sidebar_end"
+    assert "sidebar-ethical-ads" in end, "覆盖 primary_sidebar_end 时丢了伦理广告位"
 
 
 # -- 构建期守卫：版本身份证 ------------------------------------------------

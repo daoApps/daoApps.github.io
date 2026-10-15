@@ -63,6 +63,20 @@ mermaid_version = "11.4.1"
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 
+# -- 发布通道切换 ----------------------------------------------------------
+# 同一份 doc/ 源部署到两条通道（GitHub Pages 与 Read the Docs），左侧栏底部的
+# 切换下拉让读者跳到**同一页**在另一条通道上的地址：前端把当前页路径拼到目标通道
+# 的基址后面，目标页不存在时回退到该通道首页。两条目由 _static/switcher.json 描述。
+#
+# 这里的两个代号必须与 switcher.json 的 `version` 字段逐一对应（有测试守护）。
+_CHANNEL_GH_PAGES = "gh-pages"
+_CHANNEL_RTD = "rtd"
+
+# 当前在哪条通道上构建，就高亮哪一条：同一份 HTML 会被部署到两处，页面自己认不出
+# 身在何处，只能在构建期按环境变量分流——RTD 构建带 READTHEDOCS，GitHub Actions
+# 带 GITHUB_ACTIONS，本地预览按 GitHub Pages 处理。
+_CURRENT_CHANNEL = _CHANNEL_RTD if os.environ.get("READTHEDOCS") else _CHANNEL_GH_PAGES
+
 # -- HTML 输出 -------------------------------------------------------------
 
 html_theme = "sphinx_book_theme"
@@ -87,6 +101,19 @@ html_theme_options = {
     "show_navbar_depth": 1,
     "show_toc_level": 3,
     "extra_footer": "",  # 实际内容由 _inject_footer 按页注入
+    # 通道切换下拉：数据源用**相对路径**读本地 doc/_static/switcher.json。
+    # 不要换成 http(s) 绝对 URL——pydata 在构建期会对绝对 URL 发 requests.get
+    # 校验，读不到即 warning，本站开了 -W（RTD 侧 fail_on_warning）会直接构建失败；
+    # 更糟的是首次部署前该文件还不存在，必然形成自举死锁。相对路径改为读本地文件：
+    # 校验仍在（条目缺 url/version 会 warning → 被 -W 拦下），且无网络依赖；
+    # 前端按站点根解析它，故 GitHub Pages 与 RTD 的 /zh-cn/latest/ 前缀下都取得到。
+    "switcher": {
+        "json_url": "_static/switcher.json",
+        "version_match": _CURRENT_CHANNEL,
+    },
+    # 主题默认是 ["sidebar-ethical-ads"]（RTD 伦理广告位占位）；保留它、在它前面
+    # 挂上切换下拉，既拿到按钮，也不改变 RTD 侧的既有行为。
+    "primary_sidebar_end": ["version-switcher", "sidebar-ethical-ads"],
 }
 
 # -- 搜索 ------------------------------------------------------------------

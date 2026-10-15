@@ -1,0 +1,12 @@
+[
+  {
+    "name": "GitHub Pages",
+    "version": "gh-pages",
+    "url": "https://daoapps.github.io/"
+  },
+  {
+    "name": "Read the Docs",
+    "version": "rtd",
+    "url": "https://daoapps.readthedocs.io/zh-cn/latest/"
+  }
+]
