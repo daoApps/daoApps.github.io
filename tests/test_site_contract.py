@@ -503,11 +503,15 @@ def test_switcher_covers_both_channels():
     pydata 前端把目标地址拼成 `entry.url + 当前页路径`（pydata-sphinx-theme.js
     `populateVersionSwitcher`），基址漏掉结尾的 `/` 会拼出
     `https://daoapps.github.iojieban/index.html` 这种坏 URL。
+
+    域名是 RTD 上的**既成事实**，不是可以随手填的占位：RTD 的 slug 由仓库名
+    `daoapps.github.io` 自动派生为 `daoappsgithubio`。曾经按「daoapps」写入，
+    实测打开是 404 Project not found——改这里之前请先在浏览器确认可达。
     """
     by_version = {e["version"]: e for e in _switcher_entries()}
     assert set(by_version) == {"gh-pages", "rtd"}, f"清单未覆盖双通道：{set(by_version)}"
     assert by_version["gh-pages"]["url"].startswith("https://daoapps.github.io/")
-    assert by_version["rtd"]["url"].startswith("https://daoapps.readthedocs.io/")
+    assert by_version["rtd"]["url"].startswith("https://daoappsgithubio.readthedocs.io/")
     for entry in by_version.values():
         assert entry["url"].endswith("/"), f"基址未以 / 结尾，会拼出坏 URL：{entry['url']}"
 

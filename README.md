@@ -88,8 +88,10 @@ python -m http.server -d _build/html 8931
 | 当前通道 | `conf.py` 的 `switcher.version_match` | 按构建环境分流：RTD 构建（带 `READTHEDOCS`）→ `rtd`，其余（GitHub Actions / 本地预览）→ `gh-pages`。同一份 HTML 部署到两处，页面自己认不出身在何处 |
 | 挂载点 | `conf.py` 的 `primary_sidebar_end` | 取 `["version-switcher", "sidebar-ethical-ads"]`；主题默认只有后者，覆盖时把它带上，免得顺手砍掉 RTD 侧的伦理广告位 |
 
-> RTD 项目 slug 目前按 `daoapps.readthedocs.io` 写入（导入时把 slug 设为 `daoapps`）。
-> 若最终 slug 不同，只需改 `switcher.json` 里 `rtd` 条目一行，其余无需动。
+> RTD 项目 slug 是 `daoappsgithubio`——RTD 按仓库名 `daoapps.github.io` **自动派生**（不是 `daoapps`，
+> 后者实测打开是 404 Project not found），故站点基址为 `https://daoappsgithubio.readthedocs.io/zh-cn/latest/`。
+> 清单里只写这个**裸基址**（以 `/` 结尾），别把浏览器地址栏里的 `index.html` 一起抄进来：
+> 前端拼的是「基址 + 当前页路径」，多一段 `index.html` 会拼出坏 URL。
 
 ## 内容纪律（摘要）
 
