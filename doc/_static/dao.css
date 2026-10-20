@@ -1772,3 +1772,451 @@ article.bd-article .fp-card-go {
     page-break-inside: avoid;
   }
 }
+
+/* ================= 二十 · 学习实验室子站（doc/xuexi/） =================
+ *
+ * 新组件全部限定 .xx-lab 作用域，复用既有 token，不外溢到其他子站。
+ */
+
+article.bd-article .xx-lab {
+  max-width: var(--jb-measure);
+  margin: 0 auto;
+}
+
+/* —— 印章与导语 —— */
+article.bd-article .xx-seal {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  text-align: center;
+  font-family: var(--kai);
+  font-size: 1.2rem;
+  color: var(--cinnabar);
+  border: 1.5px solid var(--cinnabar);
+  border-radius: var(--r-s);
+  margin-bottom: 1.2rem;
+}
+
+article.bd-article .xx-sub {
+  font-size: 1.1rem;
+  color: var(--ink-2);
+  margin: 0.5rem 0 1.5rem;
+}
+
+article.bd-article .xx-quote {
+  border-left: 3px solid var(--cinnabar);
+  background: var(--paper-deep);
+  padding: 0.9rem 1.2rem;
+  margin: 1.5rem 0;
+  border-radius: var(--r-s);
+}
+
+article.bd-article .xx-quote q {
+  quotes: none;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+article.bd-article .xx-quote cite {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  font-style: normal;
+}
+
+article.bd-article .xx-eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  color: var(--ink-3);
+  margin: 2.5rem 0 0.3rem;
+}
+
+article.bd-article .xx-lead {
+  font-size: 1.05rem;
+  color: var(--ink-2);
+  line-height: 1.8;
+}
+
+/* —— CTA 按钮（四态锁死，避免链接反噬） —— */
+article.bd-article .xx-cta {
+  margin: 1.5rem 0;
+}
+
+article.bd-article .xx-btn {
+  display: inline-block;
+  padding: 0.55rem 1.4rem;
+  border-radius: var(--r-m);
+  font-size: 0.95rem;
+  margin-right: 0.6rem;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+  transition: opacity 0.15s;
+}
+
+article.bd-article .xx-btn-primary:link,
+article.bd-article .xx-btn-primary:visited,
+article.bd-article .xx-btn-primary:visited:hover,
+article.bd-article .xx-btn-primary:active {
+  background: var(--cinnabar);
+  color: #fff;
+  border-color: var(--cinnabar);
+}
+
+article.bd-article .xx-btn-primary:hover {
+  background: var(--cinnabar-deep);
+  border-color: var(--cinnabar-deep);
+}
+
+article.bd-article .xx-btn-ghost:link,
+article.bd-article .xx-btn-ghost:visited,
+article.bd-article .xx-btn-ghost:visited:hover,
+article.bd-article .xx-btn-ghost:active {
+  background: transparent;
+  color: var(--cinnabar);
+  border-color: var(--cinnabar);
+}
+
+article.bd-article .xx-btn-ghost:hover {
+  background: var(--paper-deep);
+}
+
+article.bd-article button.xx-btn {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+article.bd-article button.xx-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* —— 痛点块 —— */
+article.bd-article .xx-pain {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  padding: 1rem 1.3rem;
+  border-radius: var(--r-s);
+}
+
+article.bd-article .xx-pain p {
+  margin: 0.4rem 0;
+  color: var(--ink-2);
+}
+
+/* —— 工具入口卡 —— */
+article.bd-article .xx-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.2rem 0;
+}
+
+article.bd-article .xx-tool-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 1.1rem 1.2rem;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow);
+}
+
+article.bd-article .xx-tool-tag {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+}
+
+article.bd-article .xx-tool-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.3rem 0;
+  color: var(--ink);
+}
+
+article.bd-article .xx-tool-desc {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  line-height: 1.6;
+  flex: 1 1 auto;
+}
+
+article.bd-article .xx-tool-go {
+  margin-top: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--cinnabar);
+}
+
+/* —— 体检器 —— */
+article.bd-article .xx-q {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 1rem 1.2rem;
+  margin: 0.9rem 0;
+}
+
+article.bd-article .xx-q-num {
+  font-size: 0.78rem;
+  color: var(--cinnabar);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}
+
+article.bd-article .xx-q-text {
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+}
+
+article.bd-article .xx-opts label {
+  display: block;
+  padding: 0.5rem 0.7rem;
+  margin: 0.3rem 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+
+article.bd-article .xx-opts label:hover {
+  background: var(--paper-deep);
+}
+
+article.bd-article .xx-opts input {
+  margin-right: 0.5rem;
+}
+
+article.bd-article .xx-action {
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+article.bd-article .xx-left {
+  font-size: 0.85rem;
+  color: var(--ink-3);
+}
+
+article.bd-article .xx-report {
+  margin-top: 2rem;
+  border-top: 2px solid var(--line);
+  padding-top: 1.5rem;
+}
+
+article.bd-article .xx-radar {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+article.bd-article .xx-score {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.6rem 0;
+}
+
+article.bd-article .xx-sc-label {
+  flex: 0 0 6em;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+article.bd-article .xx-bar {
+  flex: 1 1 auto;
+  height: 10px;
+  background: var(--paper-deep);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+article.bd-article .xx-fill {
+  height: 100%;
+  width: 0;
+  transition: width 0.4s;
+}
+
+article.bd-article .xx-fill-risk { background: var(--cinnabar); }
+article.bd-article .xx-fill-good { background: var(--yuduo); }
+
+article.bd-article .xx-sc-val {
+  flex: 0 0 4em;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  text-align: right;
+}
+
+article.bd-article .xx-badge {
+  display: inline-block;
+  background: var(--cinnabar);
+  color: #fff;
+  padding: 0.3rem 0.9rem;
+  border-radius: var(--r-m);
+  margin-bottom: 0.7rem;
+}
+
+article.bd-article .xx-next {
+  margin-top: 1.5rem;
+  background: var(--paper-deep);
+  padding: 1rem 1.3rem;
+  border-radius: var(--r-s);
+}
+
+/* —— 机制图 —— */
+article.bd-article .xx-ring {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+  margin: 2rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+article.bd-article .xx-node {
+  flex: 1 1 180px;
+  text-align: center;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 1.2rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+article.bd-article .xx-node:hover {
+  border-color: var(--cinnabar);
+}
+
+article.bd-article .xx-node.active {
+  border-color: var(--cinnabar);
+  box-shadow: 0 0 0 3px rgba(168, 84, 60, 0.15);
+}
+
+article.bd-article .xx-node-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+article.bd-article .xx-node-sub {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  margin-top: 0.3rem;
+}
+
+article.bd-article .xx-detail {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ink-3);
+  margin-bottom: 1rem;
+}
+
+article.bd-article .xx-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cinnabar);
+  padding: 1rem 1.3rem;
+  border-radius: var(--r-s);
+  margin: 1rem 0;
+}
+
+/* —— 循环步骤 —— */
+article.bd-article .xx-loop {
+  margin: 1.2rem 0;
+}
+
+article.bd-article .xx-loop-step {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin: 0.7rem 0;
+}
+
+article.bd-article .xx-loop-step span {
+  flex: 0 0 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  background: var(--dai);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.85rem;
+}
+
+article.bd-article .xx-loop-step p {
+  margin: 0.2rem 0;
+  color: var(--ink-2);
+}
+
+/* —— 策略卡 —— */
+article.bd-article .xx-strat {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+article.bd-article .xx-strat-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 1.1rem 1.2rem;
+}
+
+article.bd-article .xx-strat-card h3 {
+  margin-top: 0;
+}
+
+article.bd-article .xx-mech {
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+article.bd-article .xx-do,
+article.bd-article .xx-when,
+article.bd-article .xx-when-not {
+  margin: 0.6rem 0;
+  font-size: 0.88rem;
+}
+
+article.bd-article .xx-do p,
+article.bd-article .xx-when p,
+article.bd-article .xx-when-not p {
+  margin: 0.2rem 0;
+}
+
+article.bd-article .xx-do-t { color: var(--yuduo); font-weight: 600; }
+article.bd-article .xx-when-t { color: var(--hengyu); font-weight: 600; }
+article.bd-article .xx-when-not-t { color: var(--cinnabar); font-weight: 600; }
+
+article.bd-article .xx-check {
+  display: block;
+  margin-top: 0.8rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--line);
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+/* —— 尾注 —— */
+article.bd-article .xx-note {
+  margin-top: 2rem;
+  padding: 0.9rem 1.2rem;
+  background: var(--paper-deep);
+  border-radius: var(--r-s);
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}
+
+@media print {
+  article.bd-article .xx-tool-card,
+  article.bd-article .xx-strat-card,
+  article.bd-article .xx-q {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

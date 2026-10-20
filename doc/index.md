@@ -50,6 +50,17 @@
 </a>
 </div>
 
+<div class="subsite">
+<a class="subsite-card" href="xuexi/">
+<span class="subsite-tag">/xuexi/</span>
+<span class="subsite-body">
+<span class="subsite-name">学以不教 · 学习实验室</span>
+<span class="subsite-desc">AI 时代的学习体检 —— 认知外包度测试、教学相长机制图、循证策略手册</span>
+</span>
+<span class="subsite-go">进入 →</span>
+</a>
+</div>
+
 ## 定位
 
 :::{container} manifesto
@@ -272,6 +283,7 @@
 
 jieban/index
 fupan/index
+xuexi/index
 ```
 
 </div>
