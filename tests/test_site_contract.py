@@ -410,7 +410,8 @@ def test_channels_reachable_from_home():
 def test_no_pending_placeholder_left():
     """所有页面占位都应已填实，首页导航不应残留「待补」。"""
     for path in (JIEBAN_DIR / "index.md", JIEBAN_DIR / "origin.md",
-                 JIEBAN_DIR / "covenant.md", JIEBAN_DIR / "channels" / "index.md"):
+                 JIEBAN_DIR / "covenant.md", JIEBAN_DIR / "channels" / "index.md",
+                 JIEBAN_DIR / "jiaoyu.md"):
         text = path.read_text(encoding="utf-8")
         assert "（待补）" not in text, f"{path.name} 仍有未填内容"
         assert "TODO" not in text, f"{path.name} 仍有未填内容"
@@ -418,8 +419,56 @@ def test_no_pending_placeholder_left():
 
 def test_top_pages_in_home_toctree():
     text = (JIEBAN_DIR / "index.md").read_text(encoding="utf-8")
-    for page in ("origin", "covenant", "channels/index"):
+    for page in ("origin", "covenant", "jiaoyu", "channels/index"):
         assert f"\n{page}\n" in text
+
+
+# -- 家庭教育专题页 ---------------------------------------------------------
+
+
+def test_family_education_page_exists():
+    assert (JIEBAN_DIR / "jiaoyu.md").is_file()
+
+
+def test_family_education_reachable_from_home_and_zhihe():
+    """专题页必须可从三个入口抵达：首页、频道索引、知和频道页。
+
+    僵尸页（无入口）等于没做——它既不会出现在导航里，也没人会找到。
+    """
+    home = (JIEBAN_DIR / "index.md").read_text(encoding="utf-8")
+    assert "jiaoyu.md" in home, "首页未链接家庭教育专题页"
+
+    channels = (JIEBAN_DIR / "channels" / "index.md").read_text(encoding="utf-8")
+    assert "../jiaoyu.md" in channels, "频道索引未提及家庭教育专题页"
+
+    zhihe = (JIEBAN_DIR / "channels" / "zhihe.md").read_text(encoding="utf-8")
+    assert "../jiaoyu.md" in zhihe, "知和频道页未链接家庭教育专题页"
+
+
+def test_family_education_is_not_a_fifth_channel():
+    """专题页不是第五间屋子，也不对应任何群——四频道结构不得被撑破。
+
+    结伴的「四词连读」是全站主张：多出一间带群的屋子，就等于多出一项业务。
+    因此专题页须自我声明「不是第五间屋子、也没有对应的群」。
+    """
+    text = (JIEBAN_DIR / "jiaoyu.md").read_text(encoding="utf-8")
+    assert "不是第五间屋子" in text, "专题页未声明自己不是第五个频道"
+    assert "没有对应的群" in text, "专题页未声明自己没有对应的群"
+
+
+def test_family_education_has_three_sections():
+    """三块内容（亲子沟通 / 学习习惯 / 成长阶段）都要在。"""
+    text = (JIEBAN_DIR / "jiaoyu.md").read_text(encoding="utf-8")
+    for section in ("壹 · 亲子关系与沟通", "贰 · 学习习惯与自律", "叁 · 成长阶段与边界"):
+        assert section in text, f"家庭教育页缺少小节：{section}"
+
+
+def test_family_education_keeps_site_discipline():
+    """专题页继承结伴站纪律：不诊断、不评判、不带货、不承诺、不碰孩子隐私。"""
+    text = (JIEBAN_DIR / "jiaoyu.md").read_text(encoding="utf-8")
+    for promise in ("不做个案诊断", "不评判", "不推荐、不带货", "不承诺结果", "不碰孩子的隐私"):
+        assert promise in text, f"家庭教育页缺少边界声明：{promise}"
+    assert "不设表单" in text, "家庭教育页未声明不设表单"
 
 
 def test_internal_group_nicknames_not_on_site():

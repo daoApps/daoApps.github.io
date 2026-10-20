@@ -162,6 +162,7 @@
 - [缘起](origin.md) —— 四个群怎么变成一个「结伴」
 - [社群公约](covenant.md) —— 六条底线，尤其是那条不能碰的红线
 - [四个频道](channels/index.md) —— 四间屋子各自的详情：适合谁、有什么、边界在哪
+- [家庭教育](jiaoyu.md) —— 一张站级专题页：亲子沟通、学习习惯与成长阶段
 
 ```{toctree}
 :hidden:
@@ -169,5 +170,6 @@
 
 origin
 covenant
+jiaoyu
 channels/index
 ```
