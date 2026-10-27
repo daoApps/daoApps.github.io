@@ -9,15 +9,20 @@
 version: 2
 
 build:
-  # ubuntu-24.04 是 RTD 当前推荐的 LTS 构建镜像；不用 ubuntu-26.04 ——
+  # ubuntu-26.04 是 RTD 当前推荐的 LTS 构建镜像；不用 ubuntu-26.04 ——
   # 该镜像上的 mambaforge 工具链解析失败（同族项目 libs/mystx 踩过，
   # 见其 .readthedocs.yml 注释与 RTD build 35084329）。本站只用 pip 依赖
-  # （requirements.txt），不涉 conda，直接用 CPython 即可。
-  os: ubuntu-24.04
+  # （pyproject.toml 的 docs 依赖组），不涉 conda，直接用 CPython 即可。
+  os: ubuntu-26.04
   tools:
     # 与 .github/workflows/pages.yml 的 setup-python 对齐（同为 3.14），
     # 避免「CI 绿、RTD 红」这类只在一边复现的构建。
     python: "3.14"
+  jobs:
+    # 本站不构建发行包；直接安装标准依赖组，不执行 pip install .。
+    pre_install:
+      - python -m pip install "pip>=25.1"
+      - python -m pip install --group docs
 
 sphinx:
   # 站点源在 doc/（单数），不在 Sphinx/RTD 默认探测的 docs/ —— 必须显式指定，
@@ -36,9 +41,3 @@ sphinx:
 # 日后若给 doc/conf.py 补上 version，可把 epub 加回 formats。
 formats:
   - htmlzip
-
-python:
-  install:
-    # 本站不是可安装的 Python 包（无 pyproject.toml），故用 requirements 文件；
-    # 同族项目 mystx 是包，走的是 method: pip + path: . + extra_requirements。
-    - requirements: requirements.txt

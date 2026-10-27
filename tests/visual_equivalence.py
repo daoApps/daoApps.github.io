@@ -29,7 +29,8 @@
     # 全站扫一遍，检查有没有改动外溢到别的页面
     python tests/visual_equivalence.py --pages all --widths 768,1280
 
-前置依赖：Sphinx 构建依赖（requirements.txt）+ Playwright（`pip install playwright`）。
+前置依赖：Sphinx 构建依赖（`pip install --group docs`，需 pip>=25.1），
+另需 Playwright（`pip install playwright`）。
 Playwright 自带浏览器未下载时会自动回退到系统已装的 Edge / Chrome。
 
 退出码：0 全绿；1 有 FAIL 项；2 环境不就绪（依赖或浏览器缺失）。

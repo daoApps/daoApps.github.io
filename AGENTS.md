@@ -33,6 +33,7 @@
 | 改全站配色 / 版式 | `doc/_static/dao.css` | 本文件「样式纪律」 |
 | 改站点结构 / 页脚 / 构建守卫 | `doc/conf.py` | 本文件「构建期守卫」 |
 | 改构建发布流程 | `.github/workflows/pages.yml` | `projects/awesome-okf-xs/.github/workflows/pages.yml`（同族模板） |
+| 改构建依赖 / 分组 | `pyproject.toml`（`dependency-groups`） | 本文件「Read the Docs 构建纪律」；同步本地、CI、RTD 与依赖契约测试 |
 | 改 RTD 构建配置 / 平台语言 | `.readthedocs.yml` + `doc/conf.py`（`_check_rtd_language`） | 本文件「Read the Docs 构建纪律」 |
 | 改通道切换按钮 / 清单 | `doc/_static/switcher.json` + `doc/conf.py`（`switcher` / `primary_sidebar_end`） | 本文件「Read the Docs 构建纪律」 |
 | 改内容契约 | `tests/test_site_contract.py` | 先改测试再改内容，或同步改 |
@@ -99,8 +100,12 @@
   `doc/conf.py` 的 `_check_rtd_language` 把这条平台设置错误变成构建期硬错误。
 - `formats` 只列 `htmlzip`：`pdf` 走 latex builder 而默认 pdflatex 不认中文字符，
   `epub` 要求 conf.py 提供 `version`（本站无版本号），两者在当前配置下都会失败。
-- 本站不是可安装的 Python 包（无 pyproject.toml），依赖走 `requirements.txt`，
-  不用 `method: pip` + `path: .` + `extra_requirements`（同族项目 mystx 是包，走的是后者）。
+- 本站不构建 Python 发行包，依赖唯一来源是 `pyproject.toml` 的 `[dependency-groups]`：
+  `docs` 保留站点依赖（含中文搜索必需的 jieba），`test` 承载 pytest，
+  `dev` 用 `include-group` 组合两者，不重复声明依赖。
+  本地、CI、RTD 均先确保 `pip>=25.1`，再用 `--group` 安装；
+  RTD 通过 `build.jobs.pre_install` 安装 docs 组，不用 `method: pip` + `path: .`，
+  不为依赖管理添加空包或构建后端。
 - **通道切换按钮**：左侧栏底部的下拉由 `doc/_static/switcher.json` 驱动，两个条目就是两条通道
   （`gh-pages`→GitHub Pages、`rtd`→Read the Docs），点击跳到**同一页**在另一通道的地址。
   三条硬约束，破了按钮就哑：
@@ -128,7 +133,8 @@
 ## 本地构建与验证
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install "pip>=25.1"
+python -m pip install --group dev
 
 # 契约测试
 python -m pytest tests -q

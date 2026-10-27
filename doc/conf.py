@@ -122,8 +122,8 @@ html_theme_options = {
 # 中文站内搜索有两道 Sphinx 默认不放行的坎，缺一道搜索就整个不可用：
 #
 #   1. 分词：SearchChinese 把中文切词交给 jieba；未安装时 cut_for_search 返回空集，
-#      中文内容一个字都进不了索引。构建期不报任何错，只是搜不到——requirements.txt
-#      已列入 jieba。
+#      中文内容一个字都进不了索引。构建期不报任何错，只是搜不到——pyproject.toml
+#      的 docs 依赖组已列入 jieba。
 #   2. 词干器：SearchChinese 若声明 js_stemmer_rawcode（服务端同样用 snowball 的
 #      english 词干器处理拉丁词，两端必须一致，否则索引里的词与查询串的词形对不上），
 #      Sphinx 生成 language_data.js 时会按 language_name 拼全局名：中文站是

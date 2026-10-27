@@ -15,7 +15,7 @@
    否则选择器全部落空且不报错（开关点了没反应、淡入类也挂不上）；
 8. 站内搜索可用性——中文分词依赖 jieba 必须列入构建依赖，且 `language_data.js`
    的词干器引用必须指向真实存在的全局名（Sphinx 拼错会让搜索整个打不开）。
-9. RTD 构建契约——配置指向 `doc/` 源与 `requirements.txt`，且 Read the Docs
+9. RTD 构建契约——配置指向 `doc/` 源与 pyproject.toml 的 docs 组，且 Read the Docs
    平台语言必须为中文：RTD 用 `-D language=<平台语言>` 覆盖 conf.py，
    平台留在默认英文会让中文分词静默失效（构建不报错，只是搜不到）。
 10. 发布通道切换——左侧栏底部的切换按钮由 `_static/switcher.json` 驱动；
@@ -27,12 +27,12 @@
     pytest tests
 """
 
-from __future__ import annotations
-
+import ast
 import importlib.util
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -297,10 +297,56 @@ def test_search_dependencies_include_jieba():
     一个字都进不了 searchindex.js，构建期不报任何错，只是搜不到。依赖文件与 CI 安装
     步骤同源，锁住这里就锁住了 CI。
     """
-    text = (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8")
-    assert re.search(r"^jieba", text, flags=re.M), (
-        "requirements.txt 未列入 jieba，中文内容不会进入搜索索引"
+    config_path = REPO_ROOT / "pyproject.toml"
+    assert config_path.is_file(), "缺少统一依赖入口 pyproject.toml"
+    config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    assert "jieba>=0.42" in config["dependency-groups"]["docs"], (
+        "docs 组未列入 jieba，中文内容不会进入搜索索引"
     )
+
+
+def test_dependency_groups_preserve_site_requirements():
+    """迁移只改变依赖声明方式，不丢失或降低已有依赖下限。"""
+    config_path = REPO_ROOT / "pyproject.toml"
+    assert config_path.is_file(), "缺少统一依赖入口 pyproject.toml"
+    config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    groups = config["dependency-groups"]
+    assert set(groups["docs"]) == {
+        "sphinx>=8.2",
+        "myst-parser>=5.1",
+        "sphinx-book-theme>=1.1",
+        "sphinx-copybutton>=0.5",
+        "sphinx-design>=0.6",
+        "sphinxcontrib-mermaid>=1.0",
+        "jieba>=0.42",
+    }
+    assert groups["test"] == ["pytest>=8.0"]
+    assert groups["dev"] == [{"include-group": "docs"}, {"include-group": "test"}]
+    assert not (REPO_ROOT / "requirements.txt").exists(), "旧依赖入口不应继续维护"
+
+
+def test_pages_installs_dependency_groups():
+    """两个 CI job 使用相同依赖源，缓存随该源变化。"""
+    text = (REPO_ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
+    assert 'python -m pip install --group docs --group test' in text
+    assert re.search(r"^\s+python -m pip install --group docs\s*$", text, re.M)
+    assert text.count('python -m pip install "pip>=25.1"') == 2
+    assert text.count("cache-dependency-path: pyproject.toml") == 2
+    assert "hashFiles('doc/conf.py', 'pyproject.toml'," in text
+    assert "requirements.txt" not in text
+
+
+def test_python_sources_do_not_use_future_annotations():
+    """项目使用现代 Python 注解语义，不引入 PEP 563 延迟字符串注解。"""
+    for directory in (DOC_DIR, REPO_ROOT / "tests"):
+        for path in directory.rglob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            assert not any(
+                isinstance(node, ast.ImportFrom)
+                and node.module == "__future__"
+                and any(alias.name == "annotations" for alias in node.names)
+                for node in ast.walk(tree)
+            ), f"{path.relative_to(REPO_ROOT)} 使用了 future annotations"
 
 
 def test_search_stemmer_reference_is_valid():
@@ -492,14 +538,17 @@ def test_jieban_keeps_no_form_or_popup():
 
 
 def test_readthedocs_config_points_at_site_source():
-    """RTD 配置必须显式指向 doc/conf.py 与 requirements.txt。
+    """RTD 配置必须显式指向 doc/conf.py 并安装统一 docs 依赖组。
 
     RTD / Sphinx 只默认探测仓库根的 `conf.py` 与 `docs/`；本站源目录是 `doc/`
     （单数），不写死路径会被判成「无配置」，构建不产出任何东西。
     """
     text = (REPO_ROOT / ".readthedocs.yml").read_text(encoding="utf-8")
     assert "configuration: doc/conf.py" in text, "RTD 未指向 doc/conf.py"
-    assert "requirements: requirements.txt" in text, "RTD 未安装本站构建依赖"
+    assert "pre_install:" in text, "RTD 未配置依赖安装步骤"
+    assert 'python -m pip install "pip>=25.1"' in text, "RTD 的 pip 必须支持 --group"
+    assert "python -m pip install --group docs" in text, "RTD 未安装本站 docs 组"
+    assert "requirements.txt" not in text, "RTD 仍在使用旧依赖入口"
     assert re.search(r"fail_on_warning:\s*true", text), (
         "RTD 未开启 fail_on_warning，平台构建会比 CI 宽松——`-W` 是本站死守的硬约束"
     )

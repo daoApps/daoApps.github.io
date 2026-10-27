@@ -1,0 +1,22 @@
+# 道用（daoApps）站点依赖；纯文档站，不构建 Python 发行包。
+# 用法：python -m pip install "pip>=25.1"
+#       python -m pip install --group dev
+
+[dependency-groups]
+docs = [
+    "sphinx>=8.2",
+    "myst-parser>=5.1",
+    "sphinx-book-theme>=1.1",
+    "sphinx-copybutton>=0.5",
+    "sphinx-design>=0.6",
+    "sphinxcontrib-mermaid>=1.0",
+    # SearchChinese 未装 jieba 时中文内容静默不进搜索索引，见 doc/conf.py。
+    "jieba>=0.42",
+]
+test = [
+    "pytest>=8.0",
+]
+dev = [
+    {include-group = "docs"},
+    {include-group = "test"},
+]

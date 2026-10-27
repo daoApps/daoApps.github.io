@@ -46,11 +46,12 @@ jobs:
         with:
           python-version: "3.14"
           cache: "pip"
+          cache-dependency-path: pyproject.toml
           allow-prereleases: true
       - name: Install doc dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install "pip>=25.1"
+          python -m pip install --group docs --group test
       - name: Gate — 站点契约测试（组织主页清单 / 结伴内容 / 版本身份证 / 页脚分层）
         run: python -m pytest tests -q
 
@@ -67,6 +68,7 @@ jobs:
         with:
           python-version: "3.14"
           cache: "pip"
+          cache-dependency-path: pyproject.toml
           allow-prereleases: true
       - name: Cache Sphinx doctrees
         uses: actions/cache@v5
@@ -74,11 +76,11 @@ jobs:
           path: _build/doctrees
           key: >-
             ${{ runner.os }}-${{ github.ref_name }}-py${{ steps.setup-python.outputs.python-version }}-docs-v1-
-            ${{ hashFiles('doc/conf.py', 'requirements.txt', 'doc/**/*.md', 'doc/_static/**') }}
+            ${{ hashFiles('doc/conf.py', 'pyproject.toml', 'doc/**/*.md', 'doc/_static/**') }}
       - name: Install doc dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install "pip>=25.1"
+          python -m pip install --group docs
       - name: Build HTML
         # -W：警告即失败。站点规模小，零警告是可持续的硬约束。
         run: >-

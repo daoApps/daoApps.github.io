@@ -21,7 +21,7 @@
 daoApps.github.io/
 ├── .github/workflows/pages.yml   gates（契约测试 + actionlint）→ build（Sphinx -W）→ deploy
 ├── AGENTS.md                     智能体入口：任务路由表 + 各类纪律
-├── requirements.txt              构建依赖
+├── pyproject.toml                依赖分组（docs / test / dev）
 ├── .readthedocs.yml              Read the Docs 构建配置（第二发布通道）
 ├── doc/                          站点源目录（唯一事实来源）
 │   ├── conf.py                   Sphinx 配置 + 构建期守卫 + 按页页脚
@@ -35,7 +35,8 @@ daoApps.github.io/
 ## 构建与本地预览
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install "pip>=25.1"
+python -m pip install --group dev
 
 # 契约测试
 python -m pytest tests -q
@@ -46,6 +47,11 @@ python -m sphinx -b html -d _build/doctrees --keep-going -W doc _build/html
 # 本地预览
 python -m http.server -d _build/html 8931
 ```
+
+依赖采用与玄境相同的标准 `[dependency-groups]` 分组：`docs` 用于构建，
+`test` 用于契约测试，`dev` 组合前两组而不重复声明。只构建站点可用
+`python -m pip install --group docs`；本仓库仍不构建 Python 发行包，
+不需要 `pip install .`，也不强制使用 PDM。
 
 ## 发布
 
@@ -68,7 +74,7 @@ python -m http.server -d _build/html 8931
 | `sphinx.configuration` | `doc/conf.py` | 源目录是 `doc/`（单数），不在 RTD 默认探测的 `docs/`，必须写死 |
 | `sphinx.fail_on_warning` | `true` | 等价 CI 的 `-W --keep-going`，平台侧不放宽质量门 |
 | `formats` | 仅 `htmlzip` | `pdf` 走 latex builder（默认 pdflatex 不认中文），`epub` 要求 conf.py 有 `version`（本站无版本号），两者均会失败 |
-| `python.install` | `requirements.txt` | 本站不是可安装的 Python 包（无 pyproject.toml），故不用 `method: pip` + `path: .` |
+| `build.jobs.pre_install` | 升级至 `pip>=25.1` 后安装 `--group docs` | 与本地、CI 共用 pyproject.toml；本站不构建 Python 发行包，不执行 `pip install .` |
 
 > **平台侧必做（一次性）**：RTD 项目 Admin → Settings → **Language 选 Simplified Chinese**。
 > RTD 构建时用 `-D language=<平台语言>` 覆盖 `conf.py` 的 `language`，平台留在默认英文会让
