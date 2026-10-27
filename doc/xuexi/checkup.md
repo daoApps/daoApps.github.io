@@ -158,6 +158,53 @@
 </ul>
 </div>
 
+<!-- 付费墙 -->
+<div id="xx-paywall" class="xx-paywall">
+<h3>你的免费报告到这里</h3>
+<p>想深入了解自己？解锁深度报告，看清你的学习模式到底卡在哪。</p>
+<div class="xx-paywall-list">
+<div><b>逐题解析</b> — 每题为什么这么问，你选的选项意味着什么</div>
+<div><b>三维深度解读</b> — 每个维度200字分析，你的水平定位</div>
+<div><b>个性化学习路径</b> — 基于你的三维组合，定制改进方向</div>
+<div><b>7天练习计划</b> — 每天做什么、怎么做、怎么验</div>
+</div>
+<button id="xx-unlock" class="xx-btn xx-btn-primary">解锁深度报告 · 9.9 元</button>
+<p class="xx-paywall-note">一次付费，一次报告。不是课程、不是会员、没有自动续费。</p>
+</div>
+
+<!-- 支付流程（模拟） -->
+<div id="xx-payment" class="xx-payment" hidden>
+<h3>扫码支付</h3>
+<div class="xx-qr-placeholder">
+<div class="xx-qr-box">微信支付</div>
+</div>
+<p>支付完成后，点击下面的按钮</p>
+<button id="xx-paid" class="xx-btn xx-btn-primary">我已支付</button>
+</div>
+
+<!-- 深度报告 -->
+<div id="xx-deep-report" class="xx-deep-report" hidden>
+
+<h2>你的深度报告</h2>
+
+<div id="xx-deep-verdict"></div>
+
+<h3>逐题解析</h3>
+<div id="xx-questions-analysis"></div>
+
+<h3>三维深度解读</h3>
+<div id="xx-dim-analysis"></div>
+
+<h3>你的学习类型</h3>
+<div id="xx-type-analysis"></div>
+
+<h3>7天练习计划</h3>
+<div id="xx-7day-plan"></div>
+
+<p class="xx-deep-note">30天后，回来再做一次体检，对比变化曲线。</p>
+
+</div>
+
 </div>
 
 ```{raw} html
@@ -167,7 +214,12 @@ document.addEventListener('DOMContentLoaded', function () {
   var left = document.getElementById('xx-left');
   var run = document.getElementById('xx-run');
   var report = document.getElementById('xx-report');
+  var unlock = document.getElementById('xx-unlock');
+  var payment = document.getElementById('xx-payment');
+  var paid = document.getElementById('xx-paid');
+  var deepReport = document.getElementById('xx-deep-report');
   var total = 10;
+  var answers = {};
 
   function answered() {
     return quiz.querySelectorAll('input[type=radio]:checked').length;
@@ -181,11 +233,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   run.addEventListener('click', function () {
     var D = 0, S = 0, M = 0;
+    answers = {};
     for (var i = 1; i <= 10; i++) {
       var el = quiz.querySelector('input[name=q' + i + ']:checked');
       if (!el) continue;
       var v = parseInt(el.value, 10);
       var dim = el.closest('.xx-q').getAttribute('data-dim');
+      answers[i] = { v: v, dim: dim, label: el.nextElementSibling.textContent };
       if (dim === 'D') D += v; else if (dim === 'S') S += v; else M += v;
     }
     // 归一化到 0-1（雷达半径）
@@ -213,6 +267,134 @@ document.addEventListener('DOMContentLoaded', function () {
     report.hidden = false;
     report.scrollIntoView({behavior: 'smooth', block: 'start'});
   });
+
+  // 付费墙：点击解锁 → 显示支付
+  unlock.addEventListener('click', function () {
+    document.getElementById('xx-paywall').hidden = true;
+    payment.hidden = false;
+    payment.scrollIntoView({behavior: 'smooth', block: 'center'});
+  });
+
+  // 模拟支付完成 → 生成深度报告
+  paid.addEventListener('click', function () {
+    payment.hidden = true;
+    generateDeepReport();
+    deepReport.hidden = false;
+    deepReport.scrollIntoView({behavior: 'smooth', block: 'start'});
+  });
+
+  // 生成深度报告
+  function generateDeepReport() {
+    var D = 0, S = 0, M = 0;
+    for (var i = 1; i <= 10; i++) {
+      if (!answers[i]) continue;
+      if (answers[i].dim === 'D') D += answers[i].v;
+      else if (answers[i].dim === 'S') S += answers[i].v;
+      else M += answers[i].v;
+    }
+
+    // 总评
+    var level;
+    if (D >= 9) level = '高危 · 学习正在被外包';
+    else if (D >= 5) level = '警戒 · 流畅陷阱已出现';
+    else level = '安全 · 学习主权在自己手里';
+    document.getElementById('xx-deep-verdict').innerHTML =
+      '<div class="xx-badge">' + level + '</div>' +
+      '<p>外包度 ' + D + '/12 · 策略 ' + S + '/9 · 动机 ' + M + '/9</p>';
+
+    // 逐题解析
+    var qAnalysis = document.getElementById('xx-questions-analysis');
+    var qTexts = {
+      1: '遇到一个看不懂的概念，你的第一反应是？',
+      2: '读完一篇 AI 总结的长文，你的真实感受是？',
+      3: '关掉 AI，让你把刚才学的内容独立写一段出来？',
+      4: '你收藏文章、囤课程的实际完成率是？',
+      5: '学完一个新内容，你怎么检验自己？',
+      6: '学过的内容，你怎么安排复习？',
+      7: '学会一个概念之后？',
+      8: '你现在学习的主要驱动力是？',
+      9: '遇到怎么都学不会的内容？',
+      10: '你清楚自己为什么正在学这个吗？'
+    };
+    var qDims = {1: '认知外包', 2: '认知外包', 3: '认知外包', 4: '认知外包', 5: '学习策略', 6: '学习策略', 7: '学习策略', 8: '动机自主', 9: '动机自主', 10: '动机自主'};
+    var html = '';
+    for (var i = 1; i <= 10; i++) {
+      if (!answers[i]) continue;
+      var a = answers[i];
+      var interpretation = '';
+      if (a.v >= 3) interpretation = '这个选项得分高，说明你在这一项上做得不错。';
+      else if (a.v >= 1) interpretation = '这个选项得分中等，说明你在这一项上还有提升空间。';
+      else interpretation = '这个选项得分低，说明你在这一项上需要重点改进。';
+      html += '<div class="xx-q-analysis">' +
+        '<div class="xx-q-num">Q' + i + ' · ' + qDims[i] + '</div>' +
+        '<div class="xx-q-text">' + qTexts[i] + '</div>' +
+        '<div class="xx-q-your-answer">你的选择：' + a.label + '</div>' +
+        '<div class="xx-q-interpretation">' + interpretation + '</div>' +
+        '</div>';
+    }
+    qAnalysis.innerHTML = html;
+
+    // 三维深度解读
+    var dimAnalysis = document.getElementById('xx-dim-analysis');
+    var dLevel = D >= 9 ? '高危' : D >= 5 ? '警戒' : '安全';
+    var sLevel = S >= 7 ? '健康' : S >= 4 ? '一般' : '薄弱';
+    var mLevel = M >= 7 ? '内驱' : M >= 4 ? '混合' : '外驱';
+    dimAnalysis.innerHTML =
+      '<div class="xx-dim-block">' +
+      '<h4>认知外包度（' + D + '/12）· ' + dLevel + '</h4>' +
+      '<p>你的认知外包水平处于' + dLevel + '区间。' +
+      (D >= 9 ? '你现在的学习习惯里，有较多"感觉学会了但其实没有"的模式。AI替你想的那一步，你的突触没长出来。' :
+       D >= 5 ? '流畅陷阱已经出现，你开始依赖AI的流畅感来代替真实的学习建构。' :
+       '你的学习主权在自己手里，没有过度依赖外部工具。') +
+      '</p></div>' +
+      '<div class="xx-dim-block">' +
+      '<h4>策略健康度（' + S + '/9）· ' + sLevel + '</h4>' +
+      '<p>你的学习策略水平处于' + sLevel + '区间。' +
+      (S >= 7 ? '你已经掌握了有效的学习方法，知道怎么检验自己、怎么安排复习。' :
+       S >= 4 ? '你的学习方法有一定效果，但还有优化空间。' :
+       '你的学习方法比较薄弱，需要系统改进。') +
+      '</p></div>' +
+      '<div class="xx-dim-block">' +
+      '<h4>动机自主度（' + M + '/9）· ' + mLevel + '</h4>' +
+      '<p>你的学习动机水平处于' + mLevel + '区间。' +
+      (M >= 7 ? '你是内驱型学习者，学习是因为你真想搞懂这件事。' :
+       M >= 4 ? '你的动机是混合型的，既有内在兴趣也有外部压力。' :
+       '你的动机偏外驱，学习更多是因为外部要求，可持续性需要注意。') +
+      '</p></div>';
+
+    // 学习类型
+    var typeEl = document.getElementById('xx-type-analysis');
+    var typeName, typeDesc;
+    if (D >= 9 && S < 5) {
+      typeName = '流畅陷阱型';
+      typeDesc = '你感觉学了很多，但其实都是AI替你想的。先补检索练习，把"再读一遍"换成"合上书回忆"。';
+    } else if (D >= 9 && S >= 5) {
+      typeName = '工具依赖型';
+      typeDesc = '你方法是对的，但用错了地方——把AI当拐杖而不是镜子。先做"先想再问"练习。';
+    } else if (D < 5 && S < 5) {
+      typeName = '努力方向型';
+      typeDesc = '你在认真学，但方法不够高效。先补间隔重复和费曼输出。';
+    } else {
+      typeName = '自学能力型';
+      typeDesc = '你已经会学习了，现在需要的是输出场景——去结伴频道分享你的心得。';
+    }
+    typeEl.innerHTML = '<div class="xx-type-card"><h4>' + typeName + '</h4><p>' + typeDesc + '</p></div>';
+
+    // 7天计划
+    var planEl = document.getElementById('xx-7day-plan');
+    planEl.innerHTML =
+      '<table class="xx-plan-table">' +
+      '<tr><th>天数</th><th>任务</th><th>怎么做</th><th>怎么验</th></tr>' +
+      '<tr><td>第1天</td><td>写下你的学习目标</td><td>拿出一张纸，写清楚：你为什么学这个？学了之后要拿去做什么？</td><td>写完读一遍，如果答不出"然后呢"，重新写</td></tr>' +
+      '<tr><td>第2天</td><td>先想再问</td><td>下次遇到不懂的，先自己想2分钟，写下你的猜测，再去查答案</td><td>对比你的猜测和答案的差距</td></tr>' +
+      '<tr><td>第3天</td><td>合上书回忆</td><td>今天学完一个内容后，合上书，默写你能记住的所有要点</td><td>默写出来的内容不到30%？正常，明天继续</td></tr>' +
+      '<tr><td>第4天</td><td>费曼讲解</td><td>把你学的一个概念，用大白话讲给一个不懂的人听</td><td>讲不清楚的地方=你没学会的地方</td></tr>' +
+      '<tr><td>第5天</td><td>间隔重复</td><td>把第1-4天学过的内容，快速回忆一遍，不要重读</td><td>能想起来多少？想不起来的标记一下</td></tr>' +
+      '<tr><td>第6天</td><td>输出一次</td><td>把你这周学的东西，写成一段200字的总结</td><td>发出去，看别人有没有问题问你</td></tr>' +
+      '<tr><td>第7天</td><td>复评体检</td><td>再做一次学习体检，对比第一次的分数</td><td>分数变化了吗？哪个维度变了？</td></tr>' +
+      '</table>';
+  }
+
   tick();
 });
 </script>
@@ -221,5 +403,98 @@ document.addEventListener('DOMContentLoaded', function () {
 <p class="xx-note">
 本工具不收集信息，所有计算在你的浏览器内完成。分级仅供方向参考，不是诊断。想系统提升？微信端联系。
 </p>
+
+```{raw} html
+<style>
+.xx-paywall {
+  margin: 40px 0;
+  padding: 30px;
+  border: 2px dashed #c8b8a0;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(200,184,160,0.05);
+}
+.xx-paywall h3 { margin-top: 0; }
+.xx-paywall-list {
+  text-align: left;
+  max-width: 400px;
+  margin: 20px auto;
+  line-height: 1.8;
+}
+.xx-paywall-note {
+  font-size: 0.85em;
+  color: #999;
+  margin-top: 16px;
+}
+.xx-payment {
+  margin: 40px auto;
+  padding: 30px;
+  text-align: center;
+  max-width: 400px;
+}
+.xx-qr-box {
+  width: 160px;
+  height: 160px;
+  margin: 20px auto;
+  border: 2px solid #c8b8a0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+  color: #999;
+  background: #f9f6f0;
+}
+.xx-deep-report {
+  margin: 40px 0;
+  padding: 30px;
+  border: 1px solid #e0d5c5;
+  border-radius: 12px;
+  background: #fdfbf8;
+}
+.xx-q-analysis {
+  margin: 20px 0;
+  padding: 16px;
+  border-left: 3px solid #c8b8a0;
+  background: rgba(200,184,160,0.05);
+}
+.xx-q-your-answer {
+  font-weight: bold;
+  margin: 8px 0;
+}
+.xx-dim-block {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(200,184,160,0.05);
+  border-radius: 8px;
+}
+.xx-type-card {
+  padding: 20px;
+  background: rgba(200,80,60,0.05);
+  border-radius: 8px;
+  border-left: 3px solid #c8503c;
+}
+.xx-plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+.xx-plan-table th, .xx-plan-table td {
+  padding: 12px;
+  border: 1px solid #e0d5c5;
+  text-align: left;
+}
+.xx-plan-table th {
+  background: rgba(200,184,160,0.1);
+}
+.xx-deep-note {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0d5c5;
+  text-align: center;
+  color: #666;
+}
+</style>
+```
 
 </div>

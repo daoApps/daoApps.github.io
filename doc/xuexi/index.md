@@ -89,6 +89,13 @@
 </a>
 </div>
 
+<div class="xx-marketplace-link">
+<a href="marketplace.md">
+<h4>大师兄集市 →</h4>
+<p>经过大师兄筛选的好东西——工具、手册、服务。不卖课、不做会员、反割韭菜。</p>
+</a>
+</div>
+
 :::{container} xx-cta
 
 [开始 3 分钟学习体检](checkup.md){.xx-btn .xx-btn-primary}
@@ -105,6 +112,7 @@
 checkup
 cycle
 playbook
+marketplace
 ```
 
 </div>
