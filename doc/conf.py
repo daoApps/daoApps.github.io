@@ -48,6 +48,8 @@ myst_enable_extensions = [
     "attrs_inline",  # 行内属性：给按钮链接挂 class（[文字](页.md){.jb-btn}）
 ]
 myst_heading_anchors = 3
+# 设计文档保留 GitHub 可识别的普通围栏，Sphinx 中交给 Mermaid 扩展渲染。
+myst_fence_as_directive = ["mermaid"]
 
 myst_substitutions = {
     "brand": "结伴",
